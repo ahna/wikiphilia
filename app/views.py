@@ -14,6 +14,8 @@ from app.helpers.database import con_db
 def index():
     # Renders index.html.
     return render_template('index.html')
+    #name = 'Ahna Girshick'
+    #return 'Hello, {0}'.format(name)
 
 @app.route('/home')
 def home():
