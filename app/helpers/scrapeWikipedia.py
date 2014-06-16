@@ -6,8 +6,7 @@ Created on Wed Jun 11 17:24:41 2014
 @author: ahna
 """
 
-from wikitools import api
-from wikitools import wiki
+
 import urllib2
 from bs4 import BeautifulSoup
 #import pandas as pd
@@ -55,24 +54,61 @@ def saveAPIRequestResult(result):
                 resultDict['title'] = thisField.encode('utf-8')
     return resultDict
 
+# method 1 uses the wikitools api (slow)
 # convert wikipage title to dict with meta info
-def getWikiPageMeta(title,site=getSite()):
+def getWikiPageMeta1(title,site=getSite()):
     # create the request object & query the API
     params = {'action':'query', 'titles':title, 'prop':'info|images|links|extlinks|categories|revisions', 'rvprop':'timestamp'}   # to do, see if i can get more info in the query  
     request = api.APIRequest(site, params)
     result = saveAPIRequestResult(request.query())
     return result
+    
+# method 2 uses the wikipedia api (faster)
+# convert wikipage title to dict with meta info
+def getWikiPageMeta2(title,site=getSite()):
+    resultDict = {'pageid': 'NA', 'title': 'NA', 'nimages': 'NA', 'nlinks':'NA', 'nrefs':'NA', 'length': 'NA','url':'NA'}
+    for r in resultDict:
+        if r == 'nimages':
+            resultDict['nimages'] = len(thisField) # to do: remove some of the standard images
+        elif r == 'pageid':
+            resultDict['pageid'] = thisField
+        elif r == 'nlinks':
+            resultDict['nlinks'] = len(thisField) # num internal links
+        elif r == 'nrefs':
+            resultDict['ncategories'] = len(thisField) # num internal links
+        elif r == 'extlinks':
+            resultDict['nextlinks'] = len(thisField) # num external links
+        elif r == 'counters':
+            resultDict['counter'] = thisField # If $wgDisableCounters is false, gives number of views. Otherwise, gives empty attribute.
+        elif r == 'new':
+            resultDict['new'] = thisField # whether the page has only one revisio
+        elif r == 'title':
+            resultDict['title'] = thisField.encode('utf-8')
+    return resultDict    
 
 # for each link, get some meta data and put in the table
-def getWikiPagesMeta(links,DF,csvfilename,iStart=0,flags='NA'):
-    import pandas as pd
-    site = getSite()
+def getWikiPagesMeta(links,DF,csvfilename,iStart=0,flags='NA',method=2):
+    import pandas as pd    
     if iStart > 0:
         DF = pd.DataFrame().from_csv(csvfilename) # load existing dataframe from file and append to it
+    
+    if method == 1: # method 1 uses the wikitools api (slow)
+        from wikitools import api
+        from wikitools import wiki
+        site = getSite()
+    elif method == 2: # method 2 uses the wikipedia api (faster)
+        import wikipedia
+        
     for i in range(iStart,len(links)):
         l = links[i]
         print(str(i) +"/" + str(len(links)) + ": " + l.text)
-        new_row = getWikiPageMeta(l.text.replace('"',''),site)
+
+        title = l.text.replace('"','')
+        if method == 1: # ethod 1 uses the wikitools api (slow)
+            new_row = getWikiPageMeta1(title,site)
+        elif method == 2:
+            new_row = getWikiPageMeta2(title)
+            
         new_row['flags'] = flags
         if flags == 'NA':
             new_row['flagged'] = False
