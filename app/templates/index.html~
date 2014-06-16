@@ -4,7 +4,7 @@
 <br><br><br><br><br><br><br><br>
 <center>
 <br>
-<img src="{{url_for('static', filename='wikipedia.globe.png')}}"/ width="20%">
+<img src="{{url_for('static/images/', filename='wikipedia.globe.png')}}"/ width="20%">
 <br>
 <h1><font color="red">Wikiphilia</font></h1>
 <br
