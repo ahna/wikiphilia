@@ -8,7 +8,9 @@ Created on Thu Jun 12 19:07:13 2014
 
 class qualPred:
     def __init__(self):
-        self.featureNames = ['length','nextlinks','nimages','nlinks']
+        #self.featreNames = ['length','nextlinks','nimages','nlinks']
+        self.featureNames = ['featured', 'flagged', 'flags', 'meanSentLen', 'meanWordLength', 'medianSentLen', 'medianWordLength', 'nChars', 'nImages', 'nLinks', 'nRefs', 'nSections', 'nSents', 'nWordsSummary', 'pageId', 'revisionId', 'title', 'url']
+        self.iUseFeatures = ['meanWordLength','nImages','nLinks','nRefs','nSections','nSents', 'nWordsSummary']
         self.testPropor = 1./3.
         #self.logres = []
         #self.logresfile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/data/temp.p'
@@ -17,7 +19,7 @@ class qualPred:
     # result is a dict returned from 
     def getFeatures(self,result):
         f = []
-        for name in self.featureNames:
+        for name in self.iUseFeatures:
             f.append(result[name])
         return f    
 
@@ -25,6 +27,7 @@ class qualPred:
     def qualityScore(self,result):
         f = self.getFeatures(result)
         print f
-        probs = self.logres.predict_proba(f) 
+        probs = self.randfor.predict_proba(f) 
+        #probs = self.logres.predict_proba(f) 
         return(probs[0][1]) # first element is prob of low quality, second element is prob of high quality
 
