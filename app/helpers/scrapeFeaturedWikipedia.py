@@ -17,11 +17,20 @@ import pymysql
 import scrapeWikipedia
 scrapeWikipedia = reload(scrapeWikipedia)
 
+def getDBPassword():
+    configfile = '../development.cfg'
+    f = open(configfile,'rb')
+    out = str(f.read())
+    t = 'DATABASE_PASSWORD'
+    i = out.find(t)
+    out = out[i + len(t) + 4:len(out)]
+    password = out[0:out.find('"')]
+    return password
 
 def main():
 
-    #conn = pymysql.connect(host='localhost', port=3306, user='root', passwd='wikiscore123', db='wikimeta')
-    #cur = conn.cursor(pymysql.cursors.DictCursor)
+    conn = pymysql.connect(host='localhost', port=3306, user='root', passwd=getDBPassword(), db='wikimeta')
+    cur = conn.cursor(pymysql.cursors.DictCursor)
     
     csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/featured.csv'
     linksfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/featured.links.p'
