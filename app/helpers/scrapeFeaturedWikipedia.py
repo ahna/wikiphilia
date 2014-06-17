@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
+scrapeFeaturedWikipedia.py
 Grab list of featured articles from Wikipedia and saves to a CSV file
 
 Created on Tue Jun 10 10:26:15 2014
@@ -14,21 +15,23 @@ import pandas as pd
 import pickle
 import pymysql
 import scrapeWikipedia
-#scrapeWikipedia = reload(scrapeWikipedia)
+scrapeWikipedia = reload(scrapeWikipedia)
 
 
 def main():
 
-    conn = pymysql.connect(host='localhost', port=3306, user='root', passwd='wikiscore123', db='wikimeta')
-    cur = conn.cursor(pymysql.cursors.DictCursor)
-    #cur.execute(<SQL statement>)
-
-    csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/data/featured.csv'
-    linksfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/data/featured.links.p'
+    #conn = pymysql.connect(host='localhost', port=3306, user='root', passwd='wikiscore123', db='wikimeta')
+    #cur = conn.cursor(pymysql.cursors.DictCursor)
+    
+    csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/featured.csv'
+    linksfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/featured.links.p'
     url = "https://en.wikipedia.org/wiki/Wikipedia:Featured_articles"
     # create a data frame
-    featuredDF = pd.DataFrame(columns=['length','nextlinks','nimages','nlinks','pageid','title','ncategories','revlastdate']) 
-
+#    featuredDF = pd.DataFrame(columns=['length','nextlinks','nimages','nlinks','pageid','title','ncategories','revlastdate']) 
+    featuredDF = pd.DataFrame(columns=['meanWordLength','meanSentLen', 'medianSentLen',  'medianWordLength', \
+     'nChars','nImages', 'nLinks','nSections', 'nSents','nRefs', 'nWordsSummary','pageId',\
+     'revisionId','title','url'])
+         
     ################################################################
     # create a Wiki object
     soup = scrapeWikipedia.grabWikiLinks(url)
@@ -40,7 +43,7 @@ def main():
     pickle.dump(str(links),open(linksfilename, 'wb'))
 
     # save wikipedia featured page meta data
-    featuredDF = scrapeWikipedia.getWikiPagesMeta(links,featuredDF,csvfilename)
+    featuredDF = scrapeWikipedia.getWikiPagesMeta(links,featuredDF,csvfilename,iStart=4284)
     
     ################################################################
     featuredDF['featured'] = True # indicate that all these articles were featured
@@ -54,6 +57,8 @@ def main():
 
     ################################################################
     # write to SQL database
+    #sql.write_frame(Office_RX, con=conn, name='Office_RX', if_exists='replace', flavor='mysql')
+    #cur.execute('INSERT')
 
 
 if __name__ == '__main__': main()
