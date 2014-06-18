@@ -9,7 +9,7 @@ Created on Thu Jun 12 19:07:13 2014
 class qualPred:
     def __init__(self):
         #self.featreNames = ['length','nextlinks','nimages','nlinks']
-        self.featureNames = ['featured', 'flagged', 'flags', 'meanSentLen', 'meanWordLength', 'medianSentLen', 'medianWordLength', 'nChars', 'nImages', 'nLinks', 'nRefs', 'nSections', 'nSents', 'nWordsSummary', 'pageId', 'revisionId', 'title', 'url']
+        self.featureNames = ['featured', 'flagged', 'flags', 'meanSentLength', 'meanWordLength', 'medianSentLength', 'medianWordLength', 'nChars', 'nImages', 'nLinks', 'nRefs', 'nSections', 'nSents', 'nWordsSummary', 'pageId', 'revisionId', 'title', 'url']
         self.iUseFeatures = ['meanWordLength','nImages','nLinks','nRefs','nSections','nSents', 'nWordsSummary']
         self.testPropor = 1./3.
         #self.logres = []
