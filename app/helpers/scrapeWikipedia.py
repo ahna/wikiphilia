@@ -26,6 +26,8 @@ def grabWikiLinks(url):
  
 # function to convert wikitools.api.APIResult to a clean dict 
 def saveAPIRequestResult(result):
+    from wikitools import api
+    from wikitools import wiki
     j = api.APIListResult(result['query']['pages'])[0]
     fields = api.APIListResult(result['query']['pages'][j])
     resultDict = {'pageid': -1, 'title': 'None', 'nimages': -1, 'nlinks':-1, 'nextlinks':-1, 'length': -1, 'ncategories':-1, 'revlastdate':-1}
@@ -59,7 +61,6 @@ def saveAPIRequestResult(result):
 # convert wikipage title to dict with meta info
 def getWikiPageMeta1(title,site=getSite()):
     from wikitools import api
-    from wikitools import wiki
     # create the request object & query the API
     params = {'action':'query', 'titles':title, 'prop':'info|images|links|extlinks|categories|revisions', 'rvprop':'timestamp'}   # to do, see if i can get more info in the query  
     request = api.APIRequest(site, params)
@@ -74,7 +75,7 @@ def getWikiPageMeta2(title):
     from numpy import median
     import wikipedia
     wp = wikipedia.page(title,auto_suggest=1)
-    results = {'meanWordLength':'NA','meanSentLen':'NA', 'medianSentLen':'NA',  'medianWordLength':'NA', \
+    results = {'meanWordLength':'NA','meanSentLength':'NA', 'medianSentLength':'NA',  'medianWordLength':'NA', \
      'nChars':'NA','nImages': 'NA', 'nLinks':'NA','nSections':'NA', 'nSents':'NA','nRefs':'NA', 'nWordsSummary':'NA','pageId': 'NA',\
      'revisionId': 'NA','title': 'NA','url':'NA'}
     
@@ -82,14 +83,14 @@ def getWikiPageMeta2(title):
     doNotUse = ['==','Further','reading','Notes','References']
     iNoteIdx = wp.content.find("Notes and references")
     nonRef = wp.content[0:iNoteIdx-1]
-    ref = wp.content[iNoteIdx:len(wp.content)]
+    #ref = wp.content[iNoteIdx:len(wp.content)]
    
     # sentence statistics
     sentences = nonRef.split('.')
     results['nSents'] = len(sentences) # num of sentences
     sentenceLengths = [len(s.split()) for s in sentences]
-    results['meanSentLen'] = mean(sentenceLengths) # average length of sentences
-    results['medianSentLen'] = median(sentenceLengths) # median length of sentences
+    results['meanSentLength'] = mean(sentenceLengths) # average length of sentences
+    results['medianSentLength'] = median(sentenceLengths) # median length of sentences
    
     # word statistics
     words = nonRef.split()

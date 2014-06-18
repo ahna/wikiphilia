@@ -37,9 +37,10 @@ def main():
     url = "https://en.wikipedia.org/wiki/Wikipedia:Featured_articles"
     # create a data frame
 #    featuredDF = pd.DataFrame(columns=['length','nextlinks','nimages','nlinks','pageid','title','ncategories','revlastdate']) 
-    featuredDF = pd.DataFrame(columns=['meanWordLength','meanSentLen', 'medianSentLen',  'medianWordLength', \
+    featuredDF = pd.DataFrame(columns=['meanWordLength','meanSentLength', 'medianSentLength',  'medianWordLength', \
      'nChars','nImages', 'nLinks','nSections', 'nSents','nRefs', 'nWordsSummary','pageId',\
-     'revisionId','title','url'])
+     'revisionId','title','url','score','flagged','flags'])
+     
          
     ################################################################
     # create a Wiki object
@@ -55,7 +56,7 @@ def main():
     featuredDF = scrapeWikipedia.getWikiPagesMeta(links,featuredDF,csvfilename,iStart=4284)
     
     ################################################################
-    featuredDF['featured'] = True # indicate that all these articles were featured
+    featuredDF['score'] = True # indicate that all these articles were featured
     featuredDF['flagged'] = False # indicate that all these articles were not flagged
     featuredDF['flags'] = 'NA' # indicate that there is no flag info
     
@@ -66,8 +67,30 @@ def main():
 
     ################################################################
     # write to SQL database
-    #sql.write_frame(Office_RX, con=conn, name='Office_RX', if_exists='replace', flavor='mysql')
-    #cur.execute('INSERT')
+    iUse = ['meanWordLength','meanSentLength', 'nChars','nImages', 'nLinks','nSections', 'nSents',\
+    'nRefs', 'nWordsSummary','pageId','revisionId','title','url','score','flagged','flags']
+    import numpy as np
+    type_dict = {np.float64:float, np.int64:int, np.bool_:bool, str:str}
+    for i in range(0,len(featuredDF)):
+        print i
+        
+        row = list( featuredDF.ix[i,iUse])
+        # convert types
+        for j in xrange(len(row)):
+            row[j] = type_dict[type(row[j])](row[j])
+            if row[j] == 'NA':
+                row[j] = None        
+         
+        # insert row into database
+        cur.execute('''INSERT INTO training (meanWordLength,meanSentLength, \
+        nChars,nImages, nLinks,nSections, nSents,nRefs, nWordsSummary,pageId,\
+        revisionId,title,url,score,flagged,flags) \
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', row)
+        conn.commit()     
+             
+    cur.close()
+    conn.commit()
+    conn.close()
 
 
 if __name__ == '__main__': main()

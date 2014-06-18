@@ -20,7 +20,7 @@ def main():
     conn = pymysql.connect(host='localhost', port=3306, user='root', passwd='wikiscore123', db='wikimeta')
     cur = conn.cursor(pymysql.cursors.DictCursor)
 
-    csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/flagged.csv'
+    flaggedflaggedcsvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/flagged.csv'
     linksfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/flagged.links.p'
     urls = ["https://en.wikipedia.org/wiki/Category:Articles_with_too_few_wikilinks_from_June_2014",\
             "https://en.wikipedia.org/wiki/Category:Wikipedia_articles_in_need_of_updating_from_June_2014",\
@@ -32,9 +32,9 @@ def main():
             "https://en.wikipedia.org/wiki/Category:Wikipedia_introduction_cleanup_from_June_2014"]
     # create a data frame
     #flaggedDF = pd.DataFrame(columns=['length','nextlinks','nimages','nlinks','pageid','title','ncategories','revlastdate','flags','flagged']) 
-    flaggedDF = pd.DataFrame(columns=['meanWordLength','meanSentLen', 'medianSentLen',  'medianWordLength', \
+    flaggedDF = pd.DataFrame(columns=['meanWordLength','meanSentLength', 'medianSentLength',  'medianWordLength', \
      'nChars','nImages', 'nLinks','nSections', 'nSents','nRefs', 'nWordsSummary','pageId',\
-     'revisionId','title','url'])
+     'revisionId','title','url','flagged','flags'])
          
     #flags = {"Too few wikilinks":1, "In need of updating":2, "May contain original research":3, "Stubs":4, "Need factual verification":5, "Need cleanup after translation":6, "Need copy editing":7, "Introduction cleanup":8}    
     
@@ -52,17 +52,17 @@ def main():
         for j in idx:
             soup2 = BeautifulSoup(str(td[j]),'xml')
             links = links + soup2.find_all("a")
-        flaggedDF = scrapeWikipedia.getWikiPagesMeta(links,flaggedDF,csvfilename,flags=i,iStart=0)
+        flaggedDF = scrapeWikipedia.getWikiPagesMeta(links,flaggedDF,flaggedcsvfilename,flags=i,iStart=0)
         allLinks = allLinks + links
         i += 1
     
     ################################################################
-    flaggedDF['featured'] = False # indicate that all these articles were not featured
+    flaggedDF['score'] = False # indicate that all these articles were not featured
     flaggedDF['flagged'] = True # indicate that all these articles were flagged
 
     # save data frame to csv file
-    flaggedDF.to_csv(csvfilename)
-    #flaggedDF = pd.DataFrame().from_csv(csvfilename) # use this line if you ever need to read from file
+    flaggedDF.to_csv(flaggedcsvfilename)
+    #flaggedDF = pd.DataFrame().from_csv(flaggedcsvfilename) # use this line if you ever need to read from file
     
     # save link list
     pickle.dump(str(allLinks),open(linksfilename, 'wb'))
