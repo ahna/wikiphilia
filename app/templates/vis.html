@@ -1,0 +1,225 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+
+<meta charset="utf-8">
+<style>
+
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  width: 960px;
+  height: 600px;
+  position: relative;
+}
+
+path.slice{
+stroke-width:2px;
+}
+
+polyline{
+opacity: .3;
+stroke: black;
+stroke-width: 2px;
+fill: none;
+}
+
+</style>
+<body>
+<br><br><br><br><br><br>
+<button class="improve">Improve WikiScore</button>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>
+
+
+var svg = d3.select("body")
+.append("svg")
+.append("g")
+
+svg.append("g")
+.attr("class", "slices");
+svg.append("g")
+.attr("class", "labels");
+svg.append("g")
+.attr("class", "lines");
+
+var width = 960,
+    height = 450,
+radius = Math.min(width, height) / 2;
+
+var pie = d3.layout.pie()
+.sort(null)
+.value(function(d) {
+return d.value;
+});
+
+var arc = d3.svg.arc()
+.outerRadius(radius * 0.8)
+.innerRadius(radius * 0.4);
+
+var outerArc = d3.svg.arc()
+.innerRadius(radius * 0.9)
+.outerRadius(radius * 0.9);
+
+svg.attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+var key = function(d){ return d.data.label; };
+
+/*
+var color = d3.scale.ordinal()
+.domain(["Wikiscore = 0.2", "# intro words 151 -> 120","# links 500 -> 495","room for improvement"])
+.range(["#98abc5", "#8a89a6", "#7b6888", "#ffffff"]);
+*/
+
+if (typeof String.prototype.startsWith != 'function') {
+  // see below for better implementation!
+  String.prototype.startsWith = function (str){
+    return this.indexOf(str) == 0;
+  };
+}
+
+function color(label) {
+   if(label.startsWith('Wikiscore')) {
+     return 'red';
+   } else { if (label.startsWith('# links')) {
+    return 'darkgreen';
+} else {
+   return 'darkblue';
+   }
+   }
+}
+
+var colorImprove = d3.scale.ordinal()
+.domain(["Wikiscore = 0.2", "# intro words 151 -> 120","# links 500 -> 495","room for improvement"])
+.range([ "green", "#d0743c","#98abc5", "#ffffff"]);
+
+function wikiScore (){
+    var labels = color.domain();
+    return labels.map(function(label){
+        return { label: label, value: Math.random() }
+    });
+}
+
+function improveWikiscore (){
+    var labels = colorImprove.domain();
+    return labels.map(function(label){
+        return { label: label, value: Math.random() }
+    });
+}
+
+var g_data;
+var g_iSuggest = 0;
+
+// then add the wikiscore
+d3.json('/data.json?q={{ searchPhrase }}', function (data) {
+	g_data = data; // for debugging
+	change(g_data.results[0],color);
+	g_iSuggest++;
+});
+
+// change(wikiScore());
+
+d3.select(".improve")
+.on("click", function(){
+change(g_data.results[g_iSuggest],color);
+g_iSuggest++;
+//change(improveWikiscore(),colorImprove);
+});
+
+
+function change(data, colorLookup) {
+
+/* ------- PIE SLICES -------*/
+var slice = svg.select(".slices").selectAll("path.slice")
+.data(pie(data), key);
+
+slice.enter()
+.insert("path")
+.style("fill", function(d) { return colorLookup(d.data.label); })
+.attr("class", "slice");
+
+slice
+.transition().duration(1000)
+.attrTween("d", function(d) {
+this._current = this._current || d;
+var interpolate = d3.interpolate(this._current, d);
+this._current = interpolate(0);
+return function(t) {
+return arc(interpolate(t));
+};
+})
+
+slice.exit()
+.remove();
+
+/* ------- TEXT LABELS -------*/
+
+var text = svg.select(".labels").selectAll("text")
+.data(pie(data), key);
+
+text.enter()
+.append("text")
+.attr("dy", ".35em")
+.text(function(d) {
+return d.data.label;
+});
+
+function midAngle(d){
+return d.startAngle + (d.endAngle - d.startAngle)/2;
+}
+
+text.transition().duration(1000)
+.attrTween("transform", function(d) {
+this._current = this._current || d;
+var interpolate = d3.interpolate(this._current, d);
+this._current = interpolate(0);
+return function(t) {
+var d2 = interpolate(t);
+var pos = outerArc.centroid(d2);
+pos[0] = radius * (midAngle(d2) < Math.PI ? 1 : -1);
+				  return "translate("+ pos +")";
+				  };
+				  })
+				  .styleTween("text-anchor", function(d){
+				  this._current = this._current || d;
+				  var interpolate = d3.interpolate(this._current, d);
+				  this._current = interpolate(0);
+				  return function(t) {
+				  var d2 = interpolate(t);
+				  return midAngle(d2) < Math.PI ? "start":"end";
+							};
+							});
+
+							text.exit()
+							.remove();
+
+							/* ------- SLICE TO TEXT POLYLINES -------*/
+
+							var polyline = svg.select(".lines").selectAll("polyline")
+							.data(pie(data), key);
+							
+							polyline.enter()
+							.append("polyline");
+
+							polyline.transition().duration(1000)
+							.attrTween("points", function(d){
+							this._current = this._current || d;
+							var interpolate = d3.interpolate(this._current, d);
+							this._current = interpolate(0);
+							return function(t) {
+							var d2 = interpolate(t);
+							var pos = outerArc.centroid(d2);
+							pos[0] = radius * 0.95 * (midAngle(d2) < Math.PI ? 1 : -1);
+												 return [arc.centroid(d2), outerArc.centroid(d2), pos];
+												 };
+												 });
+												 
+												 polyline.exit()
+												 .remove();
+};
+
+</script>
+</body>
+{% endblock %}
+
+
