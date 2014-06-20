@@ -18,8 +18,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import recall_score, precision_score
 import pickle
 #import qualityPredictor
-#from app.helpers.qualityPredictor import qualPred
-from qualityPredictor import qualPred
+from app.helpers.qualityPredictor import qualPred
+#from qualityPredictor import qualPred
 
 def optimizeRegConstant(logres):
     # determine regularization constant. TO DO: make it so it returns best C. also might need to save and restore original C
@@ -30,7 +30,6 @@ def optimizeRegConstant(logres):
         scores.append(logres.score(X_test,y_test))
     print(np.array([Cs,scores]))
     plt.plot(Cs,scores)
-
 
 
 def main():
@@ -76,7 +75,6 @@ def main():
     qp.randfor.fit(X_train, y_train)
     print qp.randfor.score(X_test, y_test)
     qp.rfclf.feature_importances_
-
         
     ##############################################
     # build learning pipeline for logistic regression
@@ -85,8 +83,12 @@ def main():
     qp.logres.fit(X_train, y_train)
     qp.logres.score(X_test,y_test)
 
+    qp.computeQualityOverFeatureGrid()
+    
     ##############################################
     # save results
+    from os import chdir
+    chdir('/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/')
     pickle.dump(qp,open(qualityPredictorFile, 'wb'))
     print qp.logres_clf.raw_coef_
     qp2 = pickle.load(open(qualityPredictorFile, 'rb'))
@@ -98,7 +100,7 @@ def main():
     print("Random forest score on test data: " + str(qp.randfor.score(X_test, y_test)))
     preds = qp.randfor.predict(X_test)
     print("Random forest Recall score on test data: " + str(recall_score(y_test, preds)))
-    print("Random forest sPrecision score on test data: " + str(precision_score(y_test, preds)))
+    print("Random forest Precision score on test data: " + str(precision_score(y_test, preds)))
 
     print("Logistic regression Score on training data: " + str(qp.logres.score(X_train, y_train)))
     print("Logistic regression Score on test data: " + str(qp.logres.score(X_test, y_test)))
