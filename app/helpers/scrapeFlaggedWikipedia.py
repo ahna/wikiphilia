@@ -17,10 +17,10 @@ import pickle
 
 def main():
 
-    conn = pymysql.connect(host='localhost', port=3306, user='root', passwd='wikiscore123', db='wikimeta')
-    cur = conn.cursor(pymysql.cursors.DictCursor)
+    conn, cur = scrapeWikipedia.openDB()
 
-    flaggedflaggedcsvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/flagged.csv'
+
+    flaggedcsvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/flagged.csv'
     linksfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/flagged.links.p'
     urls = ["https://en.wikipedia.org/wiki/Category:Articles_with_too_few_wikilinks_from_June_2014",\
             "https://en.wikipedia.org/wiki/Category:Wikipedia_articles_in_need_of_updating_from_June_2014",\
@@ -45,7 +45,7 @@ def main():
     for i in range(len(urls)-1,len(urls)):
         url = urls[i]
         print url
-        soup = scrapeWikipedia.grabWikiLinks(url)
+        soup = scrapeWikipedia.grabWikiLinksFromURL(url)
         td = soup.findAll('td')
         idx = [len(td)-3,len(td)-2,len(td)-1] # the last three columns on page
         links = []
@@ -57,7 +57,7 @@ def main():
         i += 1
     
     ################################################################
-    flaggedDF['score'] = False # indicate that all these articles were not featured
+    flaggedDF['score'] = 0 # indicate that all these articles were not featured
     flaggedDF['flagged'] = True # indicate that all these articles were flagged
 
     # save data frame to csv file
@@ -70,7 +70,7 @@ def main():
 
     ################################################################
     # write to SQL database
-    flaggedDF.to_sql('wikimeta', conn, flavor='mysql', if_exists='append')
+    #flaggedDF.to_sql('wikimeta', conn, flavor='mysql', if_exists='append')
 
 
 if __name__ == '__main__': main()
