@@ -14,7 +14,7 @@
 CREATE TABLE IF NOT EXISTS training (
   id INT NOT NULL AUTO_INCREMENT,
   meanWordLength DECIMAL(3,1) NULL,
-  meanSentLength DECIMAL(3,1) NULL,
+  meanSentLength DECIMAL(4,1) NULL,
   nChars INT NULL,
   nImages INT NULL,
   nLinks INT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS training (
   revisionId INT NULL,
   title VARCHAR(100),
   url VARCHAR(150),
-  score INT NULL,
+  score DECIMAL(4,2) NULL,
   flags INT NULL,
   flagged INT NULL,
   PRIMARY KEY (id)
