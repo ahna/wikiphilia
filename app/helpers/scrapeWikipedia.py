@@ -10,7 +10,8 @@ import urllib2
 from bs4 import BeautifulSoup
 import pymysql
 import pandas as pd
-from app.helpers.database import conDB, curDB, closeDB
+from database import *
+#from app.helpers.readability_score.calculators.fleschkincaid import *
 
 ##########################################################################################################
 # SQL doesn't like the numpy types, so this function converts all items in row to types it likes       
@@ -21,7 +22,10 @@ def convert_types(row):
         if row[j] == 'NA' or row[j] == None: # or (is_numlike(row[j]) and isnan(row[j])):
             row[j] = None  
         else:
-            row[j] = type_dict[type(row[j])](row[j])
+            try:
+                row[j] = type_dict[type(row[j])](row[j])
+            except:
+                row[j] = None
     return row
 
 ##########################################################################################################
@@ -42,13 +46,15 @@ class wikiScraper():
     def __init__(self):
 #        from wikitools import wiki
 #        self.site = wiki.Wiki("http://en.wikipedia.org/w/api.php")         
-        self.wp = []
+        self.wp = [] # place for current wikipedia page
         self.method = 2 # which wiki api wrapper to use
         self.DF = pd.DataFrame(columns=['meanWordLength','meanSentLength', 'medianSentLength',  'medianWordLength', \
-     'nChars','nImages', 'nLinks','nSections', 'nSents','nRefs', 'nWordsSummary','pageId',\
-     'revisionId','title','url','score','flagged','flags'])
+     'nChars','nImages', 'nLinks','nSections', 'nSents','nRefs', 'nWordsSummary','pageId','revisionId','title','url','reading_ease','grade_level',\
+     'ColemanLiauIndex','GunningFogIndex','ARI','SMOGIndex','flags','flagged','score'])
         self.iUseDB = ['meanWordLength','meanSentLength', 'nChars','nImages', 'nLinks','nSections', 'nSents',\
-    'nRefs', 'nWordsSummary','pageId','revisionId','title','url','flagged','flags','score']
+     'nRefs', 'nWordsSummary','pageId','revisionId','title','url','reading_ease','grade_level',\
+     'ColemanLiauIndex','GunningFogIndex','ARI','SMOGIndex',\
+     'flags','flagged','score']
        
     def login(self):
         self.site.login("ahnagirshick", "HMb58tfj") # login - required for read-restricted wikis
@@ -114,18 +120,56 @@ class wikiScraper():
         request = api.APIRequest(self.site, params)
         result = self.saveAPIRequestResult(request.query())
         return result
-        
+    
+    def getReadability(self):    
+        import nltk
+        from nltk_contrib.readability.readabilitytests import ReadabilityTool
+        text = self.wp.content.encode('utf8')
+        if len(text) == 0:
+            return None
+        try:
+            i = text.find('== Notes and references ==')
+            text = text[0:i] # don't use notes and references in readability measures
+        except ValueError:
+            pass
+        try:
+            i = text.find('== See also ==')
+            text = text[0:i] # don't use notes and references in readability measures
+        except ValueError:
+            pass
+        try:
+            i = text.find('== References ==')
+            text = text[0:i] # don't use notes and references in readability measures
+        except ValueError:
+            pass
+        try:
+            i = text.find('== External links ==')
+            text = text[0:i] # don't use notes and references in readability measures
+        except ValueError:
+            pass 
+        try:
+            i = text.find('== Further reading ==')
+            text = text[0:i] # don't use notes and references in readability measures
+        except ValueError:
+            pass   
+        if len(text) > 5:
+            readability = ReadabilityTool(text)    
+        else:
+            readability = None
+        return readability
+            
     ##########################################################################################################    
     # method 2 uses the wikipedia api (faster)
     # convert wikipage title to dict with meta info
     def getWikiPageMeta2(self,title=None,pageid=None):
-        from numpy import mean
-        from numpy import median
+        from numpy import mean, median
         import wikipedia
         try:
             self.wp = wikipedia.page(title=title,pageid=pageid,auto_suggest=1,preload=True)
         except:
             print "Skipped pageid " + str(pageid)    
+            return None
+
         results = dict()
         
         # figure out where notes and references section starts
@@ -135,29 +179,59 @@ class wikiScraper():
         #ref = wp.content[iNoteIdx:len(wp.content)]
         sentences = nonRef.split('.')
         words = nonRef.split()
-       
+        if len(self.wp.content) < 5:
+            bNoText = 1
+            print "No text!"
+        else:
+            bNoText = 0
+        
+        if (bNoText == 0) and ('reading_ease' in self.iUseDB or 'grade_level' in self.iUseDB):
+#            import nltk
+#            from nltk_contrib.readability.readabilitytests import ReadabilityTool
+            readability = self.getReadability()
+            if readability is None:
+                bNoText = 1
+
         for iUse in self.iUseDB:   
             
             # sentence statistics
             if iUse == 'nSents':
-                results['nSents'] = len(sentences) # num of sentences
+                if bNoText:
+                    results['nSents'] = 0
+                else:
+                    results['nSents'] = len(sentences) # num of sentences
             elif iUse == 'meanSentLength':
-                sentenceLengths = [len(s.split()) for s in sentences]
-                results['meanSentLength'] = mean(sentenceLengths) # average length of sentences
+                if bNoText:
+                    results['meanSentLength'] = 0
+                else:
+                    sentenceLengths = [len(s.split()) for s in sentences]
+                    results['meanSentLength'] = mean(sentenceLengths) # average length of sentences
             elif iUse == 'medianSentLength':
-                sentenceLengths = [len(s.split()) for s in sentences]
-                results['medianSentLength'] = median(sentenceLengths) # median length of sentences
+                if bNoText:
+                    results['medianSentLength'] = 0
+                else:
+                    sentenceLengths = [len(s.split()) for s in sentences]
+                    results['medianSentLength'] = median(sentenceLengths) # median length of sentences
             elif iUse == 'nWords':  # word statistics
                words = [x for x in words if x not in doNotUse] # remove do not use words
                results['nWords'] = len(words)
             elif iUse == 'meanWordLength':
-               wordLengths = [len(w) for w in words]
-               results['meanWordLength']  = mean(wordLengths)
-            elif iUse == 'meanWordLength':
-               wordLengths = [len(w) for w in words]
-               results['medianWordLength'] = median(wordLengths)       
+               if bNoText:
+                   results['meanWordLength'] = 0
+               else:
+                   wordLengths = [len(w) for w in words]
+                   results['meanWordLength']  = mean(wordLengths)
+            elif iUse == 'medianWordLength':
+               if bNoText:
+                   results['medianWordLength'] = 0
+               else:
+                   wordLengths = [len(w) for w in words]
+                   results['medianWordLength'] = median(wordLengths)       
             elif iUse == 'nChars': # character statistics
-                results['nChars'] = len(nonRef.replace('\n','').replace('=',''))    
+                if bNoText:
+                    results['nChars'] = 0
+                else:
+                    results['nChars'] = len(nonRef.replace('\n','').replace('=',''))    
             elif iUse == 'nWordsSummary':    
                 results['nWordsSummary'] = len(self.wp.summary.split()) # num of words in intro section
             elif iUse == 'nImages':
@@ -169,9 +243,42 @@ class wikiScraper():
             elif iUse == 'url':
                 results['url'] = self.wp.url            
             elif iUse == 'nSections':
-                results['nSections'] = self.wp.content.count('\n\n\n==')+1 # add 1 to account for fist section                 
+                results['nSections'] = self.wp.content.count('\n\n==')+1 # add 1 to account for fist section                 
             elif iUse == 'title':
                 results['title'] = self.wp.title
+            elif iUse == 'grade_level':
+                if bNoText:
+                    results['grade_level'] = None
+                else:
+                    results['grade_level'] = readability.FleschKincaidGradeLevel() #getReportAll(text)
+            elif iUse =='reading_ease':
+                if bNoText:
+                    results['reading_ease'] = None
+                else:
+                    try:
+                        results['reading_ease'] = readability.FleschReadingEase()                
+                    except:
+                        results['reading_ease'] = None
+            elif iUse =='ColemanLiauIndex':
+                if bNoText:
+                    results['ColemanLiauIndex'] = None                
+                else:
+                    results['ColemanLiauIndex'] = readability.ColemanLiauIndex()                
+            elif iUse =='GunningFogIndex':
+                if bNoText:
+                    results['GunningFogIndex'] = None               
+                else:
+                    results['GunningFogIndex'] =  readability.GunningFogIndex()                   
+            elif iUse =='ARI':
+                if bNoText:
+                    results['ARI'] = None
+                else:
+                    results['ARI'] = readability.ARI()    
+            elif iUse =='SMOGIndex':
+                if bNoText:
+                    results['SMOGIndex'] = None
+                else:
+                    results['SMOGIndex'] = readability.SMOGIndex()
             elif iUse == 'nLinks':
                 try:
                     results['nLinks'] =  len(self.wp.links) # num internal links to other Wikipedia pages
@@ -187,17 +294,31 @@ class wikiScraper():
     
     ##########################################################################################################
     # check if wikipedia page is already in the DB
-    def pageInDB(self,p,cur):
+    def pageInDB(self,cur,p=None,title=None,datatable='testing2'):
         isIn = False
-        cur.execute('''SELECT COUNT(1) FROM testing WHERE pageid = %s ''', str(p))
-        isIn = min(1,cur.fetchall()[0][0])
+        if p is not None:
+            if datatable == 'testing2':
+                cur.execute('''SELECT COUNT(1) FROM testing2 WHERE pageid = %s ''', str(p))
+                isIn = min(1,cur.fetchall()[0][0])
+            elif datatable == 'training2':
+                cur.execute('''SELECT COUNT(1) FROM training2 WHERE pageid = %s ''', str(p))               
+                isIn = min(1,cur.fetchall()[0][0])
+        elif title is not None:
+            if datatable == 'testing2':
+                cur.execute('''SELECT COUNT(1) FROM testing2 WHERE title = %s ''', str(title))
+                isIn = min(1,cur.fetchall()[0][0])
+            elif datatable == 'training2':
+                try:
+                    cur.execute('''SELECT COUNT(1) FROM training2 WHERE title = %s ''', str(title))                
+                except:
+                    return isIn
+                isIn = min(1,cur.fetchall()[0][0])
         return isIn
         
     ##########################################################################################################
     # for each link, get some meta data and put in the table
-    def getWikiPagesMeta(self,links = 'NA',DF = 'NA',csvfilename = 'NA',iStart=0,flags=None,tablename='testing'):
+    def getWikiPagesMeta(self,links = 'NA',DF = 'NA',csvfilename = 'NA',iStart=0,flags=None,tablename='testing2'):
         import pandas as pd    
-        qp = getQualPred()
         title = None
         p = None
         
@@ -221,64 +342,76 @@ class wikiScraper():
         # for each link in the list    
         for i in range(iStart,n):
             
-            bPageInDB = self.pageInDB(p,cur)
-            
             if links != 'NA':
                 # dataframe method
                 l = links[i]
                 print(str(i) +"/" + str(n) + ": " + l.text)
-                title = l.text.replace('"','')
+                title = l.text.replace('"','') # fix for unicode junk
             else:
                 # database method
                 p = self.pageids[i][0]
+
+            bPageInDB = self.pageInDB(cur,p=p,title=title,datatable=tablename)
                 
             # only continue if using data frame method or if page not alrady in data base
-            if links != 'NA' or not bPageInDB:
+            if not bPageInDB:
                         
                 if self.method == 1: # method 1 uses the wikitools api (slow)
                     new_row = self.getWikiPageMeta1(title)
                 elif self.method == 2:
-                    print(str(i) +"/" + str(n) + ": " + str(p) + " in? : " + str(bPageInDB))
+                    if p is not None:
+                        print(str(i) +"/" + str(n) + ": " + str(p) + " in? : " + str(bPageInDB))
                     new_row = self.getWikiPageMeta2(title,p)
-                    
-                new_row['score'] = None                
-                new_row['flags'] = flags
-                if flags == None:
-                    new_row['flagged'] = False
-                else:
-                    new_row['flagged'] = True
-                    new_row['score'] = 0                 
-                    
-                print new_row    
-                if csvfilename != 'NA':     
-                    # write to csv file
-                    self.DF = self.DF.append(new_row,ignore_index=True)
-                    self.DF.to_csv(csvfilename, encoding='utf-8')
-                else:
-                    # write to DB     
-                    # row = list( featuredDF.ix[i,iUse])
-                    new_row2 = list()
-                    for u in self.iUseDB:
-                        new_row2.append(new_row[u])
-                    new_row = convert_types(list( new_row2))
-                    
-                    # insert row into database
-                    if tablename == 'training':
-                        cur.execute('''INSERT INTO training (meanWordLength,meanSentLength, \
-                        nChars,nImages, nLinks,nSections, nSents,nRefs, nWordsSummary,pageId,\
-                        revisionId,title,url,score,flagged,flags) \
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', new_row)
+                 
+                if new_row != None: 
+                    new_row['score'] = None                
+                    new_row['flags'] = flags
+    
+                    if flags == None:
+                        new_row['flagged'] = False
                     else:
-                        try:
-                            cur.execute('''INSERT INTO testing (meanWordLength,meanSentLength, \
-                            nChars,nImages, nLinks,nSections, nSents,nRefs, nWordsSummary,pageId,\
-                            revisionId,title,url,score,flagged,flags) \
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', new_row)
-                            score = self.scorePageDB(features,p,qp,conn)
-                        except:
-                            print "Skipping:  "
-                            print new_row   
-
+                        new_row['flagged'] = True
+                        new_row['score'] = 0                 
+    
+                    if csvfilename != 'NA':     
+                        # write to csv file
+                        self.DF = self.DF.append(new_row,ignore_index=True)
+                        self.DF.to_csv(csvfilename, encoding='utf-8')
+                    else:
+                        # write to DB     
+                        # row = list( featuredDF.ix[i,iUse])
+                        new_row2 = list()
+                        for u in self.iUseDB:
+                            new_row2.append(new_row[u])
+                        new_row = convert_types(list( new_row2))
+                        print new_row
+                        # insert row into database
+                        if tablename == 'training2':
+                            try:
+                                cur.execute('''INSERT INTO training2 (meanWordLength,meanSentLength, \
+                                nChars,nImages, nLinks,nSections, nSents,nRefs, nWordsSummary,pageId,\
+                                revisionId,title,url,reading_ease,grade_level,\
+                                ColemanLiauIndex,GunningFogIndex,ARI,SMOGIndex,flags,flagged,score) \
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', new_row)
+                                conn.commit()
+                            except:
+                                print "Skipping:  "
+                                pass
+                        else:
+                            try:
+                                cur.execute('''INSERT INTO testing2 (meanWordLength,meanSentLength, \
+                                nChars,nImages, nLinks,nSections, nSents,nRefs, nWordsSummary,pageId,\
+                                revisionId,title,url,reading_ease,grade_level,\
+                                ColemanLiauIndex,GunningFogIndex,ARI,SMOGIndex,flags,flagged,score) \
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', new_row)
+                                conn.commit()
+                                qp = getQualPred()
+                                self.scorePageDB(features,p,qp,conn)
+                            except:
+                                print "Skipping:  "
+                                print new_row   
+    
+    
             i += 1  
             
         # close up database
@@ -290,7 +423,7 @@ class wikiScraper():
     # score page and write to DB
     def scorePageDB(self,features,pageId,qp,conn):
         score = float(qp.qualityScore(features))
-        curDB(conn).execute('''UPDATE testing SET score=%s WHERE pageId=%s''',(score,int(pageId)))
+        curDB(conn).execute('''UPDATE testing2 SET score=%s WHERE pageId=%s''',(score,int(pageId)))
         conn.commit()
         return score
         
@@ -317,7 +450,10 @@ class wikiScraper():
                    
         closeDB(conn)
 
-    ##########################################################################################################
+ #   def removeDuplicates(self):
+ #       ALTER IGNORE TABLE training2 ADD UNIQUE INDEX pageId (pageId);
+ 
+   ##########################################################################################################
     # run through all the pages and write whether the page is in the database or not
     def checkPageInDB(self): 
                     
@@ -330,7 +466,7 @@ class wikiScraper():
         # for each link in the list    
         for i in range(n):
             p = self.pageids[i][0]
-            bPageInDB = self.pageInDB(p,cur)
+            bPageInDB = self.pageInDB(cur,p=p,title=title)
             print(str(i) +"/" + str(n) + ": " + str(p) + " in? : " + str(bPageInDB))
             
         closeDB(conn)    
@@ -340,10 +476,10 @@ class wikiScraper():
 def main():
     # scrape a set of wikipedia pages and add them to the database
     ws = wikiScraper()
-    #ws.grabWikiPageIDsFromDB()
+    ws.grabWikiPageIDsFromDB()
     #ws.checkPageInDB()
-    #ws.getWikiPagesMeta()
+    ws.getWikiPagesMeta(iStart=789)
     ws.scoreDB()
     
 
-if __name__ == '__main__': main()
+#if __name__ == '__main__': main()
