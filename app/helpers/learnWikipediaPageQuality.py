@@ -20,6 +20,7 @@ import pickle
 #import qualityPredictor
 from app.helpers.qualityPredictor import qualPred
 #from qualityPredictor import qualPred
+from app.helpers.database import *
 
 def optimizeRegConstant(logres):
     # determine regularization constant. TO DO: make it so it returns best C. also might need to save and restore original C
@@ -37,32 +38,40 @@ def main():
     
     ##############################################
     # file names
-    featured_csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/featured.csv'
-    flagged_csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/flagged.csv'
+    #featured_csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/featured.csv'
+    #flagged_csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/flagged.csv'
     #qualityPredictorFile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/data/qualityPredictor.p'
     qualityPredictorFile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/qualityPredictorFile.p'
         
     ##############################################
-    # load data
-    featuredDF = pd.DataFrame().from_csv(featured_csvfilename) # load existing dataframe from file and append to it
-    flaggedDF = pd.DataFrame().from_csv(flagged_csvfilename) # load existing dataframe from file and append to it
-    flaggedDF['featured']=False
-    featuredDF['flags']='NA'
-    featuredDF['flagged']=0
-    featuredDF['featured']=True
-    DF = pd.concat([featuredDF,flaggedDF])
-    
+    # load data from CSV file
+#    featuredDF = pd.DataFrame().from_csv(featured_csvfilename) # load existing dataframe from file and append to it
+#    flaggedDF = pd.DataFrame().from_csv(flagged_csvfilename) # load existing dataframe from file and append to it
+#    flaggedDF['featured']=False
+#    featuredDF['flags']='NA'
+#    featuredDF['flagged']=0
+#    featuredDF['featured']=True
+#    DF = pd.concat([featuredDF,flaggedDF])
+
+    ##############################################
+    # load data from database
+    import pandas.io.sql as psql
+    conn = conDB()
+    DF = psql.frame_query("SELECT * FROM training2", conn)
+    closeDB(conn)
+
     ##############################################
     # set up data matrices
     #useFeatures = [ 'meanSentLen','meanWordLength','medianSentLen','medianWordLength','nChars','nImages','nLinks','nRefs',\
     #'nSections', 'nSents', 'nWordsSummary']
 #    useFeatures = ['meanWordLength','nImages','nLinks','nRefs','nSections','nSents', 'nWordsSummary']
     DF = DF[~np.isnan(DF.meanWordLength)] # remove rows with NaN in meanWordLength
+    DF = DF[~np.isnan(DF.reading_ease)] # remove rows with NaN in reading_ease  
     X = DF[qp.iUseFeatures].values #.astype('float')
-    #X_scaled = preprocessing.scale(X) # feature normalization, save noralization info!
+    #X_scaled = preprocessing.scale(X) # feature normalization, save normalization info!
     
     # labels are 1 if featured is True, 0 if flagged is True
-    y = DF['featured'].values
+    y = DF['score'].values
     
     ##############################################
     # divide into training set and test set
@@ -74,7 +83,8 @@ def main():
     qp.randfor = Pipeline([("scaler", preprocessing.StandardScaler()), ("clf", qp.rfclf)])
     qp.randfor.fit(X_train, y_train)
     print qp.randfor.score(X_test, y_test)
-    qp.rfclf.feature_importances_
+    for i in range(len(qp.iUseFeatures)):
+        print qp.iUseFeatures[i], qp.rfclf.feature_importances_[i]
         
     ##############################################
     # build learning pipeline for logistic regression
@@ -83,7 +93,7 @@ def main():
     qp.logres.fit(X_train, y_train)
     qp.logres.score(X_test,y_test)
 
-    qp.computeQualityOverFeatureGrid()
+    #qp.computeQualityOverFeatureGrid()
     
     ##############################################
     # save results
