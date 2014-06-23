@@ -11,7 +11,10 @@ from bs4 import BeautifulSoup
 import pymysql
 import pandas as pd
 from database import *
+from qualPred import qualPred
 #from app.helpers.readability_score.calculators.fleschkincaid import *
+#from app.helpers.qualityPredictor import qualPred
+
 
 ##########################################################################################################
 # SQL doesn't like the numpy types, so this function converts all items in row to types it likes       
@@ -19,10 +22,10 @@ def convert_types(row):
     import numpy as np
     type_dict = {np.float64:float, np.int64:int, np.bool_:bool, bool:bool, int:int, str:str, unicode:str,float:float}
     for j in range(len(row)):
-        if row[j] == 'NA' or row[j] == None: # or (is_numlike(row[j]) and isnan(row[j])):
+        if row[j] == 'NA' or row[j] is None: # or (is_numlike(row[j]) and isnan(row[j])):
             row[j] = None  
         else:
-            try:
+            try:    
                 row[j] = type_dict[type(row[j])](row[j])
             except:
                 row[j] = None
@@ -33,11 +36,13 @@ def convert_types(row):
 def getQualPred():
     # open quality predictor
     import pickle
-    from app.helpers.qualityPredictor import qualPred
+    print "imported modules"
     #qpfile = './app/helpers/qualityPredictorFile.p'
     qpfile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/qualityPredictorFile.p'
     file = open(qpfile, 'rb')
+    print("loaded file")
     qp = pickle.load(file)
+    print "got qp!"
     return qp
 
 ##########################################################################################################                 
@@ -82,8 +87,8 @@ class wikiScraper():
         from wikitools import api
         j = api.APIListResult(result['query']['pages'])[0]
         fields = api.APIListResult(result['query']['pages'][j])
-        resultDict = {'pageid': -1, 'title': 'None', 'nimages': -1, 'nlinks':-1, 'nextlinks':-1, 'length': -1, 'ncategories':-1, 'revlastdate':-1}
-        #   resultDict = {'pageid': -1, 'title': 'None', 'nimages': -1, 'nlinks':-1, 'nextlinks':-1, 'length': -1, 'counter': -1, 'new': -1, 'ncategories':-1}
+        resultDict = {'pageid': -1, 'title': None, 'nimages': -1, 'nlinks':-1, 'nextlinks':-1, 'length': -1, 'ncategories':-1, 'revlastdate':-1}
+        #   resultDict = {'pageid': -1, 'title': None, 'nimages': -1, 'nlinks':-1, 'nextlinks':-1, 'length': -1, 'counter': -1, 'new': -1, 'ncategories':-1}
         for f in fields:
             if f != 'ns':
                 thisField = result['query']['pages'][j][f]
@@ -165,7 +170,7 @@ class wikiScraper():
         from numpy import mean, median
         import wikipedia
         try:
-            self.wp = wikipedia.page(title=title,pageid=pageid,auto_suggest=1,preload=True)
+            self.wp = wikipedia.page(title=title,pageid=pageid,auto_suggest=1)
         except:
             print "Skipped pageid " + str(pageid)    
             return None
@@ -317,9 +322,8 @@ class wikiScraper():
         
     ##########################################################################################################
     # for each link, get some meta data and put in the table
-    def getWikiPagesMeta(self,links = 'NA',DF = 'NA',csvfilename = 'NA',iStart=0,flags=None,tablename='testing2'):
+    def getWikiPagesMeta(self,links = 'NA',DF = 'NA',csvfilename = 'NA',iStart=0,title=None,flags=None,tablename='testing2'):
         import pandas as pd    
-        title = None
         p = None
         
         if csvfilename != 'NA': 
@@ -332,27 +336,33 @@ class wikiScraper():
         # open up database
         conn = conDB()
         cur = curDB(conn)
-            
-        if links != 'NA':
+           
+        print title, links
+        if title is not None:
+            n = 1
+            iStart = 0
+        elif links != 'NA':
             n = len(links)
         else:
             n = len(self.pageids)
             
+        qp = getQualPred()
+        print "Got qp"
         
         # for each link in the list    
         for i in range(iStart,n):
-            
-            if links != 'NA':
-                # dataframe method
-                l = links[i]
-                print(str(i) +"/" + str(n) + ": " + l.text)
-                title = l.text.replace('"','') # fix for unicode junk
-            else:
-                # database method
-                p = self.pageids[i][0]
+            if title is None:
+                if links != 'NA':
+                    # dataframe method
+                    l = links[i]
+                    print(str(i) +"/" + str(n) + ": " + l.text)
+                    title = l.text.replace('"','') # fix for unicode junk
+                else:
+                    # database method
+                    p = self.pageids[i][0]
 
             bPageInDB = self.pageInDB(cur,p=p,title=title,datatable=tablename)
-                
+            print "bPageInDB=" + str(bPageInDB) 
             # only continue if using data frame method or if page not alrady in data base
             if not bPageInDB:
                         
@@ -363,11 +373,13 @@ class wikiScraper():
                         print(str(i) +"/" + str(n) + ": " + str(p) + " in? : " + str(bPageInDB))
                     new_row = self.getWikiPageMeta2(title,p)
                  
-                if new_row != None: 
+                if new_row is not None: 
                     new_row['score'] = None                
                     new_row['flags'] = flags
+                    if p is None:
+                        p = new_row['pageId']
     
-                    if flags == None:
+                    if flags is None:
                         new_row['flagged'] = False
                     else:
                         new_row['flagged'] = True
@@ -395,7 +407,7 @@ class wikiScraper():
                                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', new_row)
                                 conn.commit()
                             except:
-                                print "Skipping:  "
+                                print "Skipping for training2:  "
                                 pass
                         else:
                             try:
@@ -405,11 +417,12 @@ class wikiScraper():
                                 ColemanLiauIndex,GunningFogIndex,ARI,SMOGIndex,flags,flagged,score) \
                                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', new_row)
                                 conn.commit()
-                                qp = getQualPred()
-                                self.scorePageDB(features,p,qp,conn)
+                                print "Committed"
+                                f = dict(zip(self.iUseDB,new_row)) 
+                                f
+                                self.scorePageDB(f,p,qp,conn)
                             except:
-                                print "Skipping:  "
-                                print new_row   
+                                print "Skipping for testing2:  "
     
     
             i += 1  
@@ -417,12 +430,13 @@ class wikiScraper():
         # close up database
         closeDB(conn)
         
-        return self.DF
+        return True
         
     ##########################################################################################################
     # score page and write to DB
     def scorePageDB(self,features,pageId,qp,conn):
         score = float(qp.qualityScore(features))
+        print "Scoring page " + str(pageId) + " with score = " + str(score)
         curDB(conn).execute('''UPDATE testing2 SET score=%s WHERE pageId=%s''',(score,int(pageId)))
         conn.commit()
         return score
@@ -436,8 +450,8 @@ class wikiScraper():
         import pandas.io.sql as psql
         
 #        featuresDF = psql.frame_query("SELECT meanWordLength,nImages,nLinks,nRefs,nSections,nSents, nWordsSummary FROM testing", conn)
-        featuresDF = psql.frame_query("SELECT nLinks, nWordsSummary FROM testing", conn)
-        pageId = psql.frame_query("SELECT pageId FROM testing", conn)
+        featuresDF = psql.frame_query("SELECT * FROM testing2", conn)
+        pageId = psql.frame_query("SELECT pageId FROM testing2", conn)
 
         # go through each page
         print("Calculating scores & writing to database...")
@@ -477,9 +491,10 @@ def main():
     # scrape a set of wikipedia pages and add them to the database
     ws = wikiScraper()
     ws.grabWikiPageIDsFromDB()
+    print len(ws.pageids)
     #ws.checkPageInDB()
-    ws.getWikiPagesMeta(iStart=789)
-    ws.scoreDB()
+    ws.getWikiPagesMeta()
+#    ws.scoreDB()
     
 
 #if __name__ == '__main__': main()
