@@ -17,10 +17,10 @@ from sklearn import preprocessing
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import recall_score, precision_score
 import pickle
-#import qualityPredictor
-from app.helpers.qualityPredictor import qualPred
+from qualPred import qualPred
+#from app.helpers.qualPred import qualPred
 #from qualityPredictor import qualPred
-from app.helpers.database import *
+from database import *
 
 def optimizeRegConstant(logres):
     # determine regularization constant. TO DO: make it so it returns best C. also might need to save and restore original C
