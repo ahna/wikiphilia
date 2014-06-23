@@ -16,7 +16,7 @@ import wikipedia
 import pandas.io.sql as psql
 import pymysql
 from app.helpers import database
-from app.helpers import scrapeWikipedia
+from app.helpers import scrapeWikipedia as sw
 #from app.helpers.qualityPredictor import qualPred
 #from app.helpers import qualityPredictor
 from os import chdir, getcwd
@@ -46,64 +46,132 @@ def data():
 #    chdir('/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/')
 #    print getcwd()
     
-    qp = scrapeWikipedia.getQualPred()
+    # grab the saved random forest pipeline ###################################################
+    qp = sw.getQualPred()
 
     # connect to database ###################################################
     con = conDB(host='localhost', port=3306, user='root', dbname='wikimeta')
 
-    # check if this page has score and features in the database #############
+    # get wikipedia search results #############
     searchPhrase =  urllib.unquote(request.args['q'])
-    searchRes = wikipedia.search(searchPhrase, results=10, suggestion=False)
-	
+    searchRes = wikipedia.search(searchPhrase, results=3, suggestion=False)
+    if len(searchRes) < 1:
+        return("Sorry. We didn't find any results for you. Please try a new search.")
+  
     # check to see if search phrase is already in database
     bAlreadyInDB = False 
     for i in range(len(searchRes)):
-        sql = '''SELECT * FROM testing WHERE title="%s"'''%searchRes[i]
+        print i, searchRes[i]
+        sql = '''SELECT * FROM testing2 WHERE title="%s"'''%searchRes[i]
         searchPhraseDF = psql.frame_query(sql, con)
         if len(searchPhraseDF['id']) > 0:
             bAlreadyInDB = True
+            searchResultUse = searchRes[i]
+            print("Found " + searchResultUse +" testing2 database")
             break
-    closeDB(con)
     
-    if bAlreadyInDB:
-        searchPhraseUse = searchRes[i]
-        print("Using searchPhrase from database = " + searchPhraseUse)
+    if bAlreadyInDB is False:
+        print("searchPhrase not in DB... retrieving info")
+        ws = sw.wikiScraper()
+        i = 0
+        ws.getWikiPagesMeta(title = searchRes[i],tablename='testing2')
+        searchResultUse = searchRes[i]                
+        sql = '''SELECT * FROM testing2 WHERE title="%s"'''%searchResultUse
+        searchPhraseDF = psql.frame_query(sql, con)
+        bAlreadyInDB = True
+        
+    closeDB(con)
+
+    if bAlreadyInDB is True:
+        print("Using searchPhrase from database = " + searchResultUse)
         print searchPhraseDF
         print type(searchPhraseDF['url'])
-        wikiscore = searchPhraseDF['score'][0]
+        wikiscore = 100*searchPhraseDF['score'][0]
+#        if wikiscore is NULL:
+#            wikiscore = ws.scorePageDB(f,p,qp,conn)
         print("Score is " + str(wikiscore))
     else:
-        print("searchPhrase not in DB... retrieving info")
-        return('Retrieving info on ' + searchPhrase + '... please be patient....')
-	
-    if wikiscore < 1:    
-        distances = qp.computeDistances([searchPhraseDF['nLinks'][0],searchPhraseDF['nWordsSummary'][0]])
-        f1_indices,f2_indices = qp.suggest(distances,thresh=0.9)
-        newscore = qp.randfor.predict_proba([f1_indices[0],f1_indices[1]])[0][1]
-        print searchPhraseDF['nLinks'][0],searchPhraseDF['nWordsSummary'][0],f1_indices[0],f2_indices[0],wikiscore,newscore
-       
-        frac = qp.rfclf.feature_importances_ * \
-        (newscore - wikiscore)
-        print frac
+        return("Sorry. We didn't find any results for you. Please try a new search.")
+
+    print searchPhraseDF['url']
+    print searchResultUse[0]
+     
+    # prepare results to return:
+    resultFeatureVec = {'Mean Word Length':0.03646565,'# Links':0.03369929,'# References':0.09500643,'# Sections':0.05741374,'# Sentences':0.08198197,   '# Images':0.28234044,  '# Words in Intro':0.41309248}
+    featuredPageAvg = {'Mean Word Length':0.03646565,'# Links':0.03369929,'# References':0.09500643,'# Sections':0.05741374,'# Sentences':0.08198197,   '# Images':0.28234044,  '# Words in Intro':0.41309248}
+    flaggedPageAvg = {'Mean Word Length':0.03646565,'# Links':0.03369929,'# References':0.09500643,'# Sections':0.05741374,'# Sentences':0.08198197,   '# Images':0.28234044,  '# Words in Intro':0.41309248}
+    wikipediaAvg = {'Mean Word Length':0.03646565,'# Links':0.03369929,'# References':0.09500643,'# Sections':0.05741374,'# Sentences':0.08198197,   '# Images':0.28234044,  '# Words in Intro':0.41309248}
+
+
+#    # make suggestions	
+#    iUniq = [0]
+#    if wikiscore < 1:  
+#        nSuggest = 50
+#        distances = qp.computeDistances([searchPhraseDF['nLinks'][0],searchPhraseDF['nWordsSummary'][0]])
+#        f1_indices,f2_indices = qp.suggest(distances,thresh=0.9)
+#        newscore = qp.randfor.predict_proba([f1_indices[0],f2_indices[0]])[0][1]
+#        print searchPhraseDF['nLinks'][0],searchPhraseDF['nWordsSummary'][0],f1_indices[0],f2_indices[0],wikiscore,newscore
+
+#        newPerf = np.zeros((nSuggest,3))
+#        n = 0
+#        ns = 0
+#        while ns < nSuggest:
+#            n0 = qp.randfor.predict_proba([f1_indices[n],searchPhraseDF['nWordsSummary'][0]])[0][1]
+#            n1 = qp.randfor.predict_proba([searchPhraseDF['nLinks'][0],f2_indices[n]])[0][1]
+#            if n0 != wikiscore and n1 != wikiscore:
+#                # found suggestion that changed both scores                
+#                newPerf[ns,0] = n0
+#                newPerf[ns,1] = n1
+#                newPerf[ns,2] = qp.randfor.predict_proba([f1_indices[n],f2_indices[n]])[0][1]
+#                print n, newPerf[ns]
+#                ns += 1
+#            n += 1
+#        print("n = " + str(n))
+     
+     
+#     
+#        newPerf = np.zeros((len(f1_indices),3))
+#        coeff = np.zeros((len(f1_indices),1))
+#        frac = np.zeros((len(f1_indices),2))
+#        for n in range(100):
+#            newPerf[n,0] = qp.randfor.predict_proba([f1_indices[n],searchPhraseDF['nWordsSummary'][0]])[0][1]
+#            newPerf[n,1] = qp.randfor.predict_proba([searchPhraseDF['nLinks'][0],f2_indices[n]])[0][1]
+#            newPerf[n,2] = qp.randfor.predict_proba([f1_indices[n],f2_indices[n]])[0][1]
+#            coeff[n] = (newPerf[n,2]-wikiscore)/(newPerf[n,0]+newPerf[n,1])
+#            frac[n,0] = newPerf[n,0]*coeff[n]
+#            frac[n,1] = newPerf[n,1]*coeff[n]
+#            #print n, newPerf[n],coeff[n],frac[n]
+#
+#        # get unique fractions        
+#        ncols = frac.shape[1]
+#        dtype = frac.dtype.descr * ncols
+#        struct = frac.view(dtype)
+#        uniqFrac,iUniq = np.unique(struct,return_index=True) 
+#        uniqFrac = uniqFrac.view(frac.dtype).reshape(-1, ncols)
+#        iUniq.sort() # iUniq are indices into frac and coeff that provide new shapes, in order of score
+#        print frac[iUniq]
+        #frac = qp.rfclf.feature_importances_ * (newscore - wikiscore)
     
     # put the feature importances into a dict
     #featImpDict = qp.getFeatImpDict(qp.getFeatures(searchPhraseDF))
     #featImpDict = {'Wikiscore = %s'%wikiscore :wikiscore,'Mean Word Length':0.03646565,'# Links':0.03369929,'# References':0.09500643,'# Sections':0.05741374,'# Sentences':0.08198197,   '# Images':0.28234044,  '# Words in Intro':0.41309248}
-    featImpDicts = []
-    for i in range(100):
-        if wikiscore >= 1:
-            featImpDict = {'Wikiscore = %s'%wikiscore :wikiscore}
-        elif 1-wikiscore-frac[0]-frac[1] == 0:
-            featImpDict = {'Wikiscore = %s'%wikiscore :wikiscore, \
-            '# links %s -> %s' % (searchPhraseDF['nLinks'][0],int(f1_indices[i])): frac[0], \
-            '# intro words %s -> %s' % (searchPhraseDF['nWordsSummary'][0],int(f2_indices[i])): frac[1]}
-        else:
-            featImpDict = {'Wikiscore = %s'%wikiscore :wikiscore, \
-            '# links %s -> %s' % (searchPhraseDF['nLinks'][0],f1_indices[0]): frac[0], \
-            '# intro words %s -> %s' % (searchPhraseDF['nWordsSummary'][0],f2_indices[i]): frac[1], \
-            'room for improvement': 1-wikiscore-frac[0]-frac[1]}
-        featImpDicts.append(featImpDict)    
-                    
+#    featImpDicts = []
+#    for j in range(len(iUniq)):
+#        if wikiscore >= 1:
+#            featImpDict = {'Wikiscore = %s'%wikiscore :wikiscore}
+#        elif newPerf[n,2] == 1:
+#            i = iUniq[j]
+#            featImpDict = {'Wikiscore = %s'%wikiscore :wikiscore, \
+#            'Change # links %s -> %s' % (searchPhraseDF['nLinks'][0],int(f1_indices[i])): frac[i,0], \
+#            'Change # intro words %s -> %s' % (searchPhraseDF['nWordsSummary'][0],int(f2_indices[i])): frac[i,1]}
+#        else:
+#            i = iUniq[j]
+#            featImpDict = {'Wikiscore = %s'%wikiscore :wikiscore, \
+#            'Change # links %s -> %s' % (searchPhraseDF['nLinks'][0],f1_indices[0]): frac[i,0], \
+#            'Change # intro words %s -> %s' % (searchPhraseDF['nWordsSummary'][0],f2_indices[i]): frac[i,1], \
+#            'room for improvement': 1-wikiscore-frac[0]-frac[1]}
+#        featImpDicts.append(featImpDict)    
+                        
 		
     # grab meta data for this wikipedia page ################################# 
     #scores = {'meanWordLength':0.1,'nImages':0.1,'nLinks':0.1,'nRefs':0.1,'nSections':0.1,'nSents':0.1, 'nWordsSummary':0.1,'score':0.3}
@@ -111,7 +179,13 @@ def data():
 #    print scores
 #    print type(scores)
 #    out = {'results': [{'label': k, 'value': v} for k, v in featImpDict.iteritems()], 'searchPhrase': searchPhrase}
-    out = {'results': [([{'label': k, 'value': v} for k, v in f.iteritems()]) for f in featImpDicts], 'searchPhrase': searchPhrase}
+#    out = {'results': [([{'label': k, 'value': v} for k, v in f.iteritems()]) for f in featImpDicts], \
+#    'searchPhrase': searchPhrase, 'url': searchPhraseDF['url'][0], 'wikiscore': wikiscore}
+    out = {'results': ([{'label': k, 'value': v} for k, v in resultFeatureVec.iteritems()]),\
+     'featuredPageAvg': ([{'label': k, 'value': v} for k, v in resultFeatureVec.iteritems()]), \
+     'flaggedPageAvg': ([{'label': k, 'value': v} for k, v in resultFeatureVec.iteritems()]), \
+     'wikipediaAvg': ([{'label': k, 'value': v} for k, v in resultFeatureVec.iteritems()]), \
+     'searchPhrase': searchResultUse, 'url': searchPhraseDF['url'][0], 'wikiscore': wikiscore}
     return Response(json.dumps(out), mimetype='application/json') 
     #return('The predicted quality of the Wikipedia page for ' + searchPhrase + ' is ' + str(score))
 
