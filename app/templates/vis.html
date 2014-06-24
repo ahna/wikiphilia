@@ -28,19 +28,14 @@ fill: none;
 
 <body>
 <br><br><br><br><br><br>
-<h3 id="hint" style="display: none">Wikiscore for {{ searchPhrase }} is <span id="wikiscore"></span> / 100</h3>
+<h3>Wikiscore for {{ searchPhrase }} is {{wikiscore}} / 100</h3>
 <br>
-<span id="pageurl"></span>
-<br>
-<br>
-<img src="{{url_for('static', filename='analytics.JPG')}}"/ width="100%">
-<!-- 
 
-"""<svg width="580" height="464">
-	    <line x1="{xloc:.2f}" y1="30" x2="{xloc2:.2f}" y2="310" stroke="teal" stroke-width="2" />
-</svg>""".format(c_val=c_class,xloc=xloc,xloc2=xloc)
+
+{{svgtxt|safe}}
     
- -->
+    
+<!--    
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script>   
 var g_data;
@@ -52,7 +47,7 @@ d3.json('/data.json?q={{ searchPhrase }}', function (data) {
 	$('#pageurl').text(data.url);
 	$('#hint').show();
 });
-
+-->
 
 </script>
 </body>
