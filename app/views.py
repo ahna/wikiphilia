@@ -32,25 +32,85 @@ def index():
 
 
 ###################################################################
+# genetate so HTML SVG text
+def genSvg(searchPhrase, searchPhraseDF):
+    
+    con = conDB(host='localhost', port=3306, user='root', dbname='wikimeta')
+    cur = con.cursor()
+
+    svgtxt = ""
+    iUseFeatures = ['grade_level','reading_ease', 'nLinks', 'nRefs', 'nWordsSummary','nImages']
+    for i in range(len(iUseFeatures)):
+        if iUseFeatures[i] == 'reading_ease':
+            xmin = 0.; xmax = 100.
+            featureName = "Reading Ease"
+            cur.execute('''SELECT AVG(reading_ease) FROM testing2''')
+        elif iUseFeatures[i] == 'grade_level':
+            xmin = 0.; xmax = 20.
+            featureName = "Grade Level"
+            cur.execute('''SELECT AVG(grade_level) FROM testing2''')
+        elif iUseFeatures[i] == 'nRefs':
+            xmin = 0.; xmax = 500.
+            featureName = "# External Links"
+            cur.execute('''SELECT AVG(nRefs) FROM testing2''')
+        elif iUseFeatures[i] == 'nLinks':
+            xmin = 0.; xmax = 500.
+            featureName = "# Wikipedia links"
+            cur.execute('''SELECT AVG(nLinks) FROM testing2''')
+        elif iUseFeatures[i] == 'nImages':
+            xmin = 0.; xmax = 100.
+            featureName = "# Images"
+            cur.execute('''SELECT AVG(nImages) FROM testing2''')
+        elif iUseFeatures[i] == 'nWordsSummary':
+            xmin = 0.; xmax = 1000.
+            featureName = "# Words in Intro"
+            cur.execute('''SELECT AVG(nWordsSummary) FROM testing2''')
+
+        featFrac = (searchPhraseDF[iUseFeatures[i]][0] - xmin)/(xmax-xmin)
+        wikiMean = float(cur.fetchall()[0][0])
+        meanFrac = (wikiMean - xmin)/(xmax-xmin)
+        
+        if i == 0:
+            bLabel = True
+        else:
+            bLabel = False
+
+        svgtxt += genSvgBox(featureName,featFrac,xmin=xmin,xmax=xmax,meanFrac=meanFrac,bLabel=bLabel)
+    
+    closeDB(con)
+    return svgtxt
+    
+def genSvgBox(featureName,featFrac,xmin=0,xmax=100,x1=100,x2=450,meanFrac=0.5,bLabel=False):
+    xLocFeat=x1+featFrac*(x2-x1)
+    xLocWikiMean=x1+meanFrac*(x2-x1)
+    print featureName,xLocFeat, xLocWikiMean
+    
+    svgbox = """<svg width="500" height="100">
+		<text x="{xloc1:.2f}" y="25" fill="black" text-anchor="start" font-size="16" font-weight="regular">{featureName}</text>
+            <line x1="{xloc1:.2f}" y1="50" x2="{xloc2:.2f}" y2="50" stroke="orange" stroke-width="40" /> <!-- Base bar -->
+            <line x1="{xloc1:.2f}" y1="50" x2="{xLocFeat:.2f}" y2="50" stroke="teal" stroke-width="40" /> <!-- Sub bar -->
+		<line x1="{xLocWikiMean:.2f}" y1="50" x2="{xLocWikiMean2:.2f}" y2="50" stroke="red" stroke-width="40" /> <!-- All of Wikipedia mean "line" -->
+            <text x="{xloc1:.2f}" y="85" fill="black" text-anchor="start" font-size="16" font-weight="regular">{xmin}</text>          
+            <text x="{xloc2:.2f}" y="85" fill="black" text-anchor="start" font-size="16" font-weight="regular">{xmax}</text>          
+         """.format(featureName=featureName,xloc1=x1,xloc2=x2,xLocFeat=xLocFeat,xLocWikiMean=xLocWikiMean,\
+         xLocWikiMean2=xLocWikiMean+4,xmin=int(xmin),xmax=int(xmax))
+ 
+    if bLabel is True:
+      svgbox += """<line x1="{xLocWikiMean:.2f}" x2="{xLocWikiMean2:.2f}" y1="68" y2="80" stroke="red" stroke-width="4" /> <!-- Line connecting mean line to text -->
+		<text x="{xLocWikiMean3:.2f}" y="90" fill="red" text-anchor="start" font-size="16" font-weight="regular">Wikipedia Mean</text>
+          """.format(xLocWikiMean=xLocWikiMean+2,xLocWikiMean2=xLocWikiMean+14,xLocWikiMean3=xLocWikiMean+20)
+  
+    svgbox += """</svg>"""
+    return svgbox
+    
+###################################################################
 @app.route('/out', methods=['POST','GET'])
 def out():
-    print "out"
-    print request.args
-    print "out 2"    
-    print request.args['q']
-    print "out 3"    
-    searchPhrase =  urllib.unquote(request.args['q'])
-    print searchPhrase
-    wikiscore = getWikiScore(searchPhrase)
-    xloc = 5
-    svgtxt = """<svg width="500" height="200">
-			<line x1="50" y1="100" x2="450" y2="100" stroke="orange" stroke-width="40" /> <!-- Base bar -->
-			<line x1="80" y1="100" x2="200" y2="100" stroke="teal" stroke-width="40" /> <!-- Sub bar -->
-			<line x1="138" y1="100" x2="142" y2="100" stroke="red" stroke-width="40" /> <!-- Mean "line" -->
-			<line x1="140" x2="150" y1="120" y2="130" stroke="red" stroke-width="4" /> <!-- Line connecting mean line to text -->
-			<text x="155" y="140" fill="red" text-anchor="start" font-size="16" font-weight="bold">Wiki Mean</text>
-		</svg>"""
-    return render_template('vis.html', searchPhrase=request.form['searchPhrase'], wikiscore=wikiscore, svgtxt=svgtxt)
+    searchPhrase = request.form['searchPhrase']
+    wikiscore, searchPhraseDF = getWikiScore(searchPhrase)
+    svgtxt = genSvg(searchPhrase, searchPhraseDF)
+    return render_template('vis.html', searchPhrase=searchPhrase, wikiscore=wikiscore, svgtxt=svgtxt)
+
 
 # .format(xloc=xloc,xloc2=xloc)
 #<line x1="{xloc:.2f}" y1="30" x2="{xloc2:.2f}" y2="310" stroke="teal" stroke-width="2" />
@@ -100,7 +160,7 @@ def getWikiScore(searchPhrase):
         print("Using searchPhrase from database = " + searchResultUse)
         print searchPhraseDF
         print type(searchPhraseDF['url'])
-        wikiscore = 100*searchPhraseDF['score'][0]
+        wikiscore = int(round(100*(searchPhraseDF['score'][0])))
 #        if wikiscore is NULL:
 #            wikiscore = ws.scorePageDB(f,p,qp,conn)
         print("Score is " + str(wikiscore))
@@ -110,7 +170,7 @@ def getWikiScore(searchPhrase):
 
     print searchPhraseDF['url']
     print searchResultUse[0]
-    return wikiscore
+    return wikiscore, searchPhraseDF
      
 
 ###################################################################
