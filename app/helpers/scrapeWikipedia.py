@@ -491,10 +491,9 @@ def main():
     # scrape a set of wikipedia pages and add them to the database
     ws = wikiScraper()
     ws.grabWikiPageIDsFromDB()
-    print len(ws.pageids)
     #ws.checkPageInDB()
-    ws.getWikiPagesMeta()
+    ws.getWikiPagesMeta(iStart = 17596)
 #    ws.scoreDB()
     
 
-#if __name__ == '__main__': main()
+if __name__ == '__main__': main()
