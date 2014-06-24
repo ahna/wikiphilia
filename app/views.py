@@ -192,8 +192,22 @@ def data():
 ###################################################################
 @app.route('/out', methods=['POST','GET'])
 def out():
-	return render_template('vis.html', searchPhrase=request.form['searchPhrase'])
+	xloc = 5
+	svgtxt = """
+		<svg width="500" height="200">
+			<line x1="50" y1="100" x2="450" y2="100" stroke="orange" stroke-width="40" /> <!-- Base bar -->
+			<line x1="80" y1="100" x2="200" y2="100" stroke="teal" stroke-width="40" /> <!-- Sub bar -->
+			<line x1="138" y1="100" x2="142" y2="100" stroke="red" stroke-width="40" /> <!-- Mean "line" -->
+			<line x1="140" x2="150" y1="120" y2="130" stroke="red" stroke-width="4" /> <!-- Line connecting mean line to text -->
 
+			<text x="155" y="140" fill="red" text-anchor="start" font-size="16" font-weight="bold">Wiki Mean</text>
+		</svg>
+	"""
+   	wikiscore = 50
+	return render_template('vis.html', searchPhrase=request.form['searchPhrase'], wikiscore=wikiscore, svgtxt=svgtxt)
+
+# .format(xloc=xloc,xloc2=xloc)
+#<line x1="{xloc:.2f}" y1="30" x2="{xloc2:.2f}" y2="310" stroke="teal" stroke-width="2" />
 
 ###################################################################
 @app.route('/vis')
