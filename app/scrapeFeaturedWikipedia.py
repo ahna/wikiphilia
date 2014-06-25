@@ -39,7 +39,8 @@ def main():
     links = soup2.find_all("a")
     
     # save link list
-    pickle.dump(str(links),open(linksfilename, 'wb'))
+    with open(linksfilename, 'wb') as f:
+        pickle.dump(str(links),f)
 
     # save wikipedia featured page meta data
     #featuredDF = scrapeWikipedia.getWikiPagesMeta(links,csvfilename,iStart=0,tablename='training')

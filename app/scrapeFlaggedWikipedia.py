@@ -93,8 +93,8 @@ def main():
     #flaggedDF = pd.DataFrame().from_csv(flaggedcsvfilename) # use this line if you ever need to read from file
     
     # save link list
-    pickle.dump(str(allLinks),open(linksfilename, 'wb'))
-    #test= pickle.load(open(linksfilename, 'rb'))
+    with open(linksfilename, 'wb') as f:
+        pickle.dump(str(allLinks),f)
 
     ################################################################
     # write to SQL database

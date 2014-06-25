@@ -100,9 +100,12 @@ def main():
     # save results
     from os import chdir
 #    chdir('/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/')
-    pickle.dump(qp,open(qualityPredictorFile, 'wb'))
+    with open(qualityPredictorFile, 'wb') as f:
+        pickle.dump(qp,f)
+    
     print qp.logres_clf.raw_coef_
-    qp2 = pickle.load(open(qualityPredictorFile, 'rb'))
+    with open(qualityPredictorFile, 'rb') as f:
+        qp2 = pickle.load(f)
     print("Found: " + str(qp2))
 
     ##############################################

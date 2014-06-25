@@ -12,7 +12,8 @@ qpfile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/data/
     
 def main():
     # load logistic regression
-    qp = pickle.load((open(qpfile, 'rb')))
+    with open(qpfile, 'rb') as f:
+        qp = pickle.load(f)
     
     # grab meta data for this wikipedia page
     result = scrapeWikipedia.getWikiPageMeta(searchPhrase)
