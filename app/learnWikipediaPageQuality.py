@@ -41,7 +41,7 @@ def main():
     #featured_csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/featured.csv'
     #flagged_csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/flagged.csv'
     #qualityPredictorFile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/data/qualityPredictor.p'
-    qualityPredictorFile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/qualityPredictorFile.p'
+    qualityPredictorFile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/qualityPredictorFile.p'
         
     ##############################################
     # load data from CSV file
