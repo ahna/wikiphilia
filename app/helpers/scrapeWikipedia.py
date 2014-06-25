@@ -14,6 +14,9 @@ from database import *
 from qualPred import qualPred
 #from app.helpers.readability_score.calculators.fleschkincaid import *
 #from app.helpers.qualityPredictor import qualPred
+#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+configFileName = '~/wikiphilia/app/settings/development.cfg'
+debug, host, port, user, passwd, dbname = grabDatabaseSettingsFromCfgFile(configFileName)
 
 
 ##########################################################################################################
@@ -74,8 +77,10 @@ class wikiScraper():
 
     ##########################################################################################################     
     # get pageids for all content articles
-    def grabWikiPageIDsFromDB(self):    
-        conn = conDB(dbname = 'enwiki')
+    def grabWikiPageIDsFromDB(self):
+        
+        #conn = conDB(dbname = 'enwiki')
+        conn = conDB(host,dbname,passwd=passwd,port=port, user=user)
         cur = curDB(conn)
         cur.execute('''SELECT page_id FROM content_pages ORDER BY page_id''')
         self.pageids = cur.fetchall()
@@ -334,7 +339,8 @@ class wikiScraper():
             self.login()
             
         # open up database
-        conn = conDB()
+        conn = conDB(host,dbname,passwd=passwd,port=port, user=user)
+#        conn = conDB()
         cur = curDB(conn)
            
         print title, links
@@ -446,7 +452,8 @@ class wikiScraper():
     def scoreDB(self):
 
         qp = getQualPred()
-        conn = conDB()
+        conn = conDB(host,dbname,passwd=passwd,port=port, user=user)
+#        conn = conDB()
         import pandas.io.sql as psql
         
 #        featuresDF = psql.frame_query("SELECT meanWordLength,nImages,nLinks,nRefs,nSections,nSents, nWordsSummary FROM testing", conn)
@@ -472,7 +479,8 @@ class wikiScraper():
     def checkPageInDB(self): 
                     
         # open up database
-        conn = conDB()
+        conn = conDB(host,dbname,passwd=passwd,port=port, user=user)
+        #conn = conDB()
         cur = curDB(conn)
             
         n = len(self.pageids)
@@ -492,7 +500,7 @@ def main():
     ws = wikiScraper()
     ws.grabWikiPageIDsFromDB()
     #ws.checkPageInDB()
-    ws.getWikiPagesMeta(iStart = 17596)
+    ws.getWikiPagesMeta(iStart = 17619)
 #    ws.scoreDB()
     
 
