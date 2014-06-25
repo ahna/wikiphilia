@@ -16,7 +16,7 @@ from qualPred import qualPred
 #from app.helpers.qualityPredictor import qualPred
 
 #qpfile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/qualityPredictorFile.p'
-qpfile = '/home/ubuntu/wikiphilia/webapp/datasets/qualityPredictorFile.p'
+qpfile = '/home/ubuntu/wikiphilia/datasets/qualityPredictorFile.p'
 #configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
 configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
 debug, host, port, user, passwd, dbname = grabDatabaseSettingsFromCfgFile(configFileName)
