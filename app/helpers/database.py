@@ -5,7 +5,7 @@ import sys
 
 
 # DATABASE SETTINGS
-configFileName="/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg"
+configFileName="app/settings/development.cfg"
 file = open(configFileName, 'r')
 content = file.read()
 file.close()
