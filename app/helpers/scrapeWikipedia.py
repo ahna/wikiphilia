@@ -14,8 +14,11 @@ from database import *
 from qualPred import qualPred
 #from app.helpers.readability_score.calculators.fleschkincaid import *
 #from app.helpers.qualityPredictor import qualPred
+
+#qpfile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/qualityPredictorFile.p'
+qpfile = '/home/ubuntu/wikiphilia/webapp/datasets/qualityPredictorFile.p'
 #configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
-configFileName = '~/wikiphilia/app/settings/development.cfg'
+configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
 debug, host, port, user, passwd, dbname = grabDatabaseSettingsFromCfgFile(configFileName)
 
 
@@ -36,12 +39,10 @@ def convert_types(row):
 
 ##########################################################################################################
 # grab the quality predictor object
-def getQualPred():
+def getQualPred(qpfile=qpfile):
     # open quality predictor
     import pickle
     print "imported modules"
-    #qpfile = './app/helpers/qualityPredictorFile.p'
-    qpfile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/qualityPredictorFile.p'
     file = open(qpfile, 'rb')
     print("loaded file")
     qp = pickle.load(file)
