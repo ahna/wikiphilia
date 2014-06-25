@@ -5,32 +5,33 @@ import sys
 
 
 # DATABASE SETTINGS
-configFileName="app/settings/development.cfg"
-file = open(configFileName, 'r')
-content = file.read()
-file.close()
-paths = content.split("\n") #split it into lines
-for path in paths:
-    p = path.split(" = ")
-    if p[0] == 'DEBUG':
-        debug = p[1]
-    elif p[0] == 'DATABASE_HOST':
-        host = p[1].replace('"','')
-    elif p[0] == 'DATABASE_PORT':
-        port = int(p[1])
-    elif p[0] == 'DATABASE_USER':
-        user = p[1].replace('"','')
-    elif p[0] == 'DATABASE_PASSWORD':
-        passwd = p[1].replace('"','')
-    elif p[0] == 'DATABASE_DB':
-        dbname = p[1].replace('"','')
-       
+def grabDatabaseSettingsFromCfgFile(configFileName ="app/settings/development.cfg"):
+    file = open(configFileName, 'r')
+    content = file.read()
+    file.close()
+
+    paths = content.split("\n") #split it into lines
+    for path in paths:
+        p = path.split(" = ") # split it into "p[0] = p[1]" pairs
+        if p[0] == 'DEBUG':
+            debug = p[1]
+        elif p[0] == 'DATABASE_HOST':
+            host = p[1].replace('"','')
+        elif p[0] == 'DATABASE_PORT':
+            port = int(p[1])
+        elif p[0] == 'DATABASE_USER':
+            user = p[1].replace('"','')
+        elif p[0] == 'DATABASE_PASSWORD':
+            passwd = p[1].replace('"','')
+        elif p[0] == 'DATABASE_DB':
+            dbname = p[1].replace('"','')
+    return debug, host, port, user, passwd, dbname       
     
 #conn = conDB(passwd='wikiscore123',host='insight.cw33openpoo6.us-west-2.rds.amazonaws.com', port=3306, user='agirshick', dbname='insight')
     
 # Returns MySQL database connection
 # with parameter set in .cfg file
-def conDB(passwd=passwd,host=host, port=port, user=user, dbname=dbname):
+def conDB(host,dbname,passwd='',port=3306, user='root'):
     try:
         con = pymysql.connect(host=host, port=port, user=user, passwd=passwd, db=dbname)
         print("Opened database " + dbname)
