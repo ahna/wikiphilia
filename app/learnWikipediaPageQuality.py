@@ -41,7 +41,7 @@ def main():
     #featured_csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/featured.csv'
     #flagged_csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/flagged.csv'
     #qualityPredictorFile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/data/qualityPredictor.p'
-    qualityPredictorFile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/qualityPredictorFile.p'
+    qualityPredictorFile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/qualityPredictorFile.p'
         
     ##############################################
     # load data from CSV file
@@ -99,7 +99,7 @@ def main():
     ##############################################
     # save results
     from os import chdir
-    chdir('/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/')
+#    chdir('/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/')
     pickle.dump(qp,open(qualityPredictorFile, 'wb'))
     print qp.logres_clf.raw_coef_
     qp2 = pickle.load(open(qualityPredictorFile, 'rb'))
