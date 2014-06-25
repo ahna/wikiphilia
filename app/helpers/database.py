@@ -30,7 +30,7 @@ for path in paths:
     
 # Returns MySQL database connection
 # with parameter set in .cfg file
-def conDB(passwd=passwd,host=host, port=port, user=user, dbname=db):
+def conDB(passwd=passwd,host=host, port=port, user=user, dbname=dbname):
     try:
         con = pymysql.connect(host=host, port=port, user=user, passwd=passwd, db=dbname)
         print("Opened database " + dbname)
