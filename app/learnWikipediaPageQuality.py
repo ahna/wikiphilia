@@ -21,8 +21,6 @@ from qualPred import qualPred
 #from app.helpers.qualPred import qualPred
 #from qualityPredictor import qualPred
 from database import *
-configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
-debug, host, port, user, passwd, dbname = grabDatabaseSettingsFromCfgFile(configFileName)
 
 def optimizeRegConstant(logres):
     # determine regularization constant. TO DO: make it so it returns best C. also might need to save and restore original C
@@ -58,8 +56,8 @@ def main():
     ##############################################
     # load data from database
     import pandas.io.sql as psql
-    conn = conDB(host,dbname,passwd=passwd,port=port, user=user)
-#    conn = conDB()
+#    conn = conDB(host,dbname,passwd=passwd,port=port, user=user)
+    conn = conDB(host='localhost',dbname='wikimeta',passwd='wikiscore123',port=3306, user='root')
     DF = psql.frame_query("SELECT * FROM training2", conn)
     closeDB(conn)
 

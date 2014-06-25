@@ -9,7 +9,7 @@ Created on Fri Jun 13 13:42:00 2014
 from flask import render_template, request, json, Response
 import app
 from app import app, host, port, user, passwd, db
-from app.helpers.database import conDB, closeDB
+from app.helpers.database import conDB, closeDB, grabDatabaseSettingsFromCfgFile
 import urllib
 import pickle
 import wikipedia
@@ -20,6 +20,8 @@ from app.helpers import scrapeWikipedia as sw
 #from app.helpers.qualPred import qualPred
 from os import chdir, getcwd
 import numpy as np
+configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+debug, host, port, user, passwd, dbname = grabDatabaseSettingsFromCfgFile(configFileName)
 
 
 ###################################################################
@@ -35,7 +37,8 @@ def index():
 # genetate so HTML SVG text
 def genSvg(searchPhrase, searchPhraseDF):
     
-    con = conDB(host='localhost', port=3306, user='root', dbname='wikimeta')
+    #con = conDB(host='localhost', port=3306, user='root', dbname='wikimeta')
+    con = conDB(host,dbname,passwd=passwd,port=port, user=user)
     cur = con.cursor()
 
     svgtxt = ""
@@ -123,7 +126,8 @@ def getWikiScore(searchPhrase):
 #    qp = sw.getQualPred()
 
     # connect to database ###################################################
-    con = conDB(host='localhost', port=3306, user='root', dbname='wikimeta')
+#    con = conDB(host='localhost', port=3306, user='root', dbname='wikimeta')
+    con = conDB(host,dbname,passwd=passwd,port=port, user=user)
 
     # get wikipedia search results #############
     print searchPhrase    
