@@ -5,7 +5,8 @@ Created on Fri Jun 13 13:42:00 2014
 
 @author: ahna
 """
-
+###################################################################
+# set up
 from flask import render_template, request, json, Response
 import app
 from app import app, host, port, user, passwd, db
@@ -28,13 +29,77 @@ debug, host, port, user, passwd, dbname = grabDatabaseSettingsFromCfgFile(config
 
 
 ###################################################################
-# ROUTING/VIEW FUNCTIONS
+# MAIN PAGE WITH SEARCH BOX
 @app.route('/')
-#@app.route('/index')
 def index():
-    # Renders index.html.
-    return render_template('index.html')
+    return render_template('index.html')     # Renders index.html
+   
+###################################################################
+# SEARCH RESULTS
+@app.route('/out', methods=['POST','GET'])
+def out():
+    searchPhrase = request.form['searchPhrase']
+    wikiscore, searchPhraseDF = getWikiScore(searchPhrase)
+    svgtxt = genSvg(searchPhrase, searchPhraseDF)
+    return render_template('vis.html', searchPhrase=searchPhrase, wikiscore=wikiscore, svgtxt=svgtxt, url=searchPhraseDF['url'][0])
 
+
+###################################################################
+# GET WIKISCORE FOR THE SEARCH PHRASE
+def getWikiScore(searchPhrase):
+    
+    # connect to database ###################################################
+    con = conDB(host,dbname,passwd=passwd,port=port, user=user)
+
+    # get wikipedia search results ####################################
+    print searchPhrase    
+    searchRes = wikipedia.search(searchPhrase, results=3, suggestion=False)
+    print searchRes
+    if len(searchRes) < 1:
+        return("Sorry. We didn't find any results for you. Please try a new search.")
+  
+    # first check to see if search phrase results are already in database ############
+    bAlreadyInDB = False 
+    for i in range(len(searchRes)):
+        print i, searchRes[i]
+        sql = '''SELECT * FROM testing2 WHERE title="%s"'''%searchRes[i]
+        searchPhraseDF = psql.frame_query(sql, con)
+        if len(searchPhraseDF['id']) > 0:
+            bAlreadyInDB = True
+            searchResultUse = searchRes[i]
+            print("Found " + searchResultUse +" testing2 database")
+            break
+
+    # if the search phrase isn't in the data base, search and calculate score and add to db    
+    if bAlreadyInDB is False:
+        print("searchPhrase not in DB... retrieving info")
+        ws = sw.wikiScraper()
+        #qp = sw.getQualPred()
+        i = 0
+        searchResultUse = searchRes[0]                
+        ws.getWikiPagesMeta(title = searchResultUse,tablename='testing2')
+        sql = '''SELECT * FROM testing2 WHERE title="%s"'''%searchResultUse
+        searchPhraseDF = psql.frame_query(sql, con)
+        if (searchPhraseDF) > 0:
+            bAlreadyInDB = True
+        
+    closeDB(con)
+
+    if bAlreadyInDB is True:
+        print("Using searchPhrase from database = " + searchResultUse)
+        print searchPhraseDF        
+        wikiscore = int(round(100.*(searchPhraseDF['score'][0])))
+#        if wikiscore is NULL:
+#            wikiscore = ws.scorePageDB(f,p,qp,conn)
+        print("Score is " + str(searchPhraseDF['score'][0]) + ", " + str(wikiscore))
+    else:
+    	wikiscore = None
+        pri nt("Sorry. We didn't find any results for you. Please try a new search.")
+
+    print searchPhraseDF['url']
+    print searchResultUse[0]
+    return wikiscore, searchPhraseDF
+     
 
 ###################################################################
 # generate some HTML + SVG text for a single labelled bar
@@ -109,72 +174,6 @@ def genSvgBox(featureName,featFrac,xmin=0,xmax=100,x1=0,x2=350,meanFrac=0.5,bLab
   
     svgbox += """</svg>"""
     return svgbox
-    
-###################################################################
-@app.route('/out', methods=['POST','GET'])
-def out():
-    searchPhrase = request.form['searchPhrase']
-    wikiscore, searchPhraseDF = getWikiScore(searchPhrase)
-    svgtxt = genSvg(searchPhrase, searchPhraseDF)
-    return render_template('vis.html', searchPhrase=searchPhrase, wikiscore=wikiscore, svgtxt=svgtxt, url=searchPhraseDF['url'][0])
-
-
-###################################################################
-def getWikiScore(searchPhrase):
-    # load up machine learnt model parameters ###############################
-    
-    # grab the saved random forest pipeline ###################################################
-    qp = sw.getQualPred()
-
-    # connect to database ###################################################
-    con = conDB(host,dbname,passwd=passwd,port=port, user=user)
-
-    # get wikipedia search results #############
-    print searchPhrase    
-    searchRes = wikipedia.search(searchPhrase, results=3, suggestion=False)
-    print searchRes
-    if len(searchRes) < 1:
-        return("Sorry. We didn't find any results for you. Please try a new search.")
-  
-    # first check to see if search phrase is already in database
-    bAlreadyInDB = False 
-    for i in range(len(searchRes)):
-        print i, searchRes[i]
-        sql = '''SELECT * FROM testing2 WHERE title="%s"'''%searchRes[i]
-        searchPhraseDF = psql.frame_query(sql, con)
-        if len(searchPhraseDF['id']) > 0:
-            bAlreadyInDB = True
-            searchResultUse = searchRes[i]
-            print("Found " + searchResultUse +" testing2 database")
-            break
-    
-    if bAlreadyInDB is False:
-        print("searchPhrase not in DB... retrieving info")
-        ws = sw.wikiScraper()
-        i = 0
-        ws.getWikiPagesMeta(title = searchRes[i],tablename='testing2')
-        searchResultUse = searchRes[i]                
-        sql = '''SELECT * FROM testing2 WHERE title="%s"'''%searchResultUse
-        searchPhraseDF = psql.frame_query(sql, con)
-        bAlreadyInDB = True
-        
-    closeDB(con)
-
-    if bAlreadyInDB is True:
-        print("Using searchPhrase from database = " + searchResultUse)
-        print searchPhraseDF        
-        wikiscore = int(round(100.*(searchPhraseDF['score'][0])))
-#        if wikiscore is NULL:
-#            wikiscore = ws.scorePageDB(f,p,qp,conn)
-        print("Score is " + str(wikiscore))
-    else:
-    	wikiscore = None
-        print("Sorry. We didn't find any results for you. Please try a new search.")
-
-    print searchPhraseDF['url']
-    print searchResultUse[0]
-    return wikiscore, searchPhraseDF
-     
 
 ###################################################################
 # routine puts data to /data.json
