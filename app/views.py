@@ -94,7 +94,7 @@ def getWikiScore(searchPhrase):
         print("Score is " + str(searchPhraseDF['score'][0]) + ", " + str(wikiscore))
     else:
     	wikiscore = None
-        pri nt("Sorry. We didn't find any results for you. Please try a new search.")
+        print("Sorry. We didn't find any results for you. Please try a new search.")
 
     print searchPhraseDF['url']
     print searchResultUse[0]
