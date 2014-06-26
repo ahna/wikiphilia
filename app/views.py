@@ -113,7 +113,7 @@ def out():
     searchPhrase = request.form['searchPhrase']
     wikiscore, searchPhraseDF = getWikiScore(searchPhrase)
     svgtxt = genSvg(searchPhrase, searchPhraseDF)
-    return render_template('vis.html', searchPhrase=searchPhrase, wikiscore=wikiscore, svgtxt=svgtxt)
+    return render_template('vis.html', searchPhrase=searchPhrase, wikiscore=wikiscore, svgtxt=svgtxt, url=searchPhraseDF['url'][0])
 
 
 # .format(xloc=xloc,xloc2=xloc)
