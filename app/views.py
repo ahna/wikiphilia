@@ -84,7 +84,7 @@ def genSvg(searchPhrase, searchPhraseDF):
     closeDB(con)
     return svgtxt
     
-def genSvgBox(featureName,featFrac,xmin=0,xmax=100,x1=100,x2=450,meanFrac=0.5,bLabel=False):
+def genSvgBox(featureName,featFrac,xmin=0,xmax=100,x1=0,x2=350,meanFrac=0.5,bLabel=False):
     xLocFeat=x1+featFrac*(x2-x1)
     xLocWikiMean=x1+meanFrac*(x2-x1)
     print featureName,xLocFeat, xLocWikiMean
