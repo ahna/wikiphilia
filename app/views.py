@@ -15,13 +15,15 @@ import pickle
 import wikipedia
 import pandas.io.sql as psql
 import pymysql
+#from app.helpers import database
+#from app.helpers import scrapeWikipedia as sw
 from app.helpers import database
 from app.helpers import scrapeWikipedia as sw
 #from app.helpers.qualPred import qualPred
 from os import chdir, getcwd
 import numpy as np
-configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
-#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+#configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
+configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
 debug, host, port, user, passwd, dbname = grabDatabaseSettingsFromCfgFile(configFileName)
 
 
@@ -35,7 +37,7 @@ def index():
 
 
 ###################################################################
-# genetate so HTML SVG text
+# generate some HTML + SVG text for a single labelled bar
 def genSvg(searchPhrase, searchPhraseDF):
     
     #con = conDB(host='localhost', port=3306, user='root', dbname='wikimeta')
@@ -84,6 +86,7 @@ def genSvg(searchPhrase, searchPhraseDF):
     closeDB(con)
     return svgtxt
     
+# create a set fo labelled bars for each feature name
 def genSvgBox(featureName,featFrac,xmin=0,xmax=100,x1=0,x2=350,meanFrac=0.5,bLabel=False):
     xLocFeat=x1+featFrac*(x2-x1)
     xLocWikiMean=x1+meanFrac*(x2-x1)
@@ -116,18 +119,14 @@ def out():
     return render_template('vis.html', searchPhrase=searchPhrase, wikiscore=wikiscore, svgtxt=svgtxt, url=searchPhraseDF['url'][0])
 
 
-# .format(xloc=xloc,xloc2=xloc)
-#<line x1="{xloc:.2f}" y1="30" x2="{xloc2:.2f}" y2="310" stroke="teal" stroke-width="2" />
-
 ###################################################################
 def getWikiScore(searchPhrase):
     # load up machine learnt model parameters ###############################
     
     # grab the saved random forest pipeline ###################################################
-#    qp = sw.getQualPred()
+    qp = sw.getQualPred()
 
     # connect to database ###################################################
-#    con = conDB(host='localhost', port=3306, user='root', dbname='wikimeta')
     con = conDB(host,dbname,passwd=passwd,port=port, user=user)
 
     # get wikipedia search results #############
@@ -137,7 +136,7 @@ def getWikiScore(searchPhrase):
     if len(searchRes) < 1:
         return("Sorry. We didn't find any results for you. Please try a new search.")
   
-    # check to see if search phrase is already in database
+    # first check to see if search phrase is already in database
     bAlreadyInDB = False 
     for i in range(len(searchRes)):
         print i, searchRes[i]
@@ -163,9 +162,8 @@ def getWikiScore(searchPhrase):
 
     if bAlreadyInDB is True:
         print("Using searchPhrase from database = " + searchResultUse)
-        print searchPhraseDF
-        print type(searchPhraseDF['url'])
-        wikiscore = int(round(100*(searchPhraseDF['score'][0])))
+        print searchPhraseDF        
+        wikiscore = int(round(100.*(searchPhraseDF['score'][0])))
 #        if wikiscore is NULL:
 #            wikiscore = ws.scorePageDB(f,p,qp,conn)
         print("Score is " + str(wikiscore))
