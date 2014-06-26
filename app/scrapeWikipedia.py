@@ -15,10 +15,10 @@ from qualPred import qualPred
 #from app.helpers.readability_score.calculators.fleschkincaid import *
 #from app.helpers.qualityPredictor import qualPred
 
-qpfile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/qualityPredictorFile.p'
-#qpfile = '/home/ubuntu/wikiphilia/app/qualityPredictorFile.p'
-configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
-#configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
+#qpfile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/qualityPredictorFile.p'
+qpfile = '/home/ubuntu/wikiphilia/app/qualityPredictorFile.p'
+#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
 debug, host, port, user, passwd, dbname = grabDatabaseSettingsFromCfgFile(configFileName)
 
 
@@ -501,7 +501,7 @@ def main():
     ws = wikiScraper()
     ws.grabWikiPageIDsFromDB()
     #ws.checkPageInDB()
-    ws.getWikiPagesMeta(iStart = 49052)
+    ws.getWikiPagesMeta(iStart = 73897)
 #    ws.scoreDB()
     
 
