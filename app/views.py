@@ -20,7 +20,8 @@ from app.helpers import scrapeWikipedia as sw
 #from app.helpers.qualPred import qualPred
 from os import chdir, getcwd
 import numpy as np
-configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
+#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
 debug, host, port, user, passwd, dbname = grabDatabaseSettingsFromCfgFile(configFileName)
 
 
@@ -91,7 +92,7 @@ def genSvgBox(featureName,featFrac,xmin=0,xmax=100,x1=100,x2=450,meanFrac=0.5,bL
     svgbox = """<svg width="500" height="100">
 		<text x="{xloc1:.2f}" y="25" fill="black" text-anchor="start" font-size="16" font-weight="regular">{featureName}</text>
             <line x1="{xloc1:.2f}" y1="50" x2="{xloc2:.2f}" y2="50" stroke="#EEEEEE" stroke-width="40" /> <!-- Base bar -->
-            <line x1="{xloc1:.2f}" y1="50" x2="{xLocFeat:.2f}" y2="50" stroke="teal" stroke-width="40" /> <!-- Sub bar -->
+            <line x1="{xloc1:.2f}" y1="50" x2="{xLocFeat:.2f}" y2="50" stroke="teal" stroke-width="40" stroke-opacity=0.5 /> <!-- Sub bar -->
 		<line x1="{xLocWikiMean:.2f}" y1="50" x2="{xLocWikiMean2:.2f}" y2="50" stroke="red" stroke-width="40" /> <!-- All of Wikipedia mean "line" -->
             <text x="{xloc1:.2f}" y="85" fill="black" text-anchor="start" font-size="16" font-weight="regular">{xmin}</text>          
             <text x="{xloc2:.2f}" y="85" fill="black" text-anchor="start" font-size="16" font-weight="regular">{xmax}</text>          
