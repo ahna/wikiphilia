@@ -501,7 +501,7 @@ def main():
     ws = wikiScraper()
     ws.grabWikiPageIDsFromDB()
     #ws.checkPageInDB()
-    ws.getWikiPagesMeta(iStart = 56240)
+    ws.getWikiPagesMeta(iStart = 73897)
 #    ws.scoreDB()
     
 
