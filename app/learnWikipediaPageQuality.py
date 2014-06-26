@@ -94,6 +94,15 @@ def main():
     qp.logres.fit(X_train, y_train)
     qp.logres.score(X_test,y_test)
 
+    ##############################################
+    # build learning pipeline for logistic regression
+    qp.xtrees_clf = sklearn.ensemble.ExtraTreesClassifier(n_estimators=10)
+    qp.xtrees = Pipeline([("scaler", preprocessing.StandardScaler()), ("clf", qp.xtrees_clf)])
+    qp.xtrees.fit(X_train, y_train)
+    qp.xtrees.score(X_test,y_test)
+
+
+
     #qp.computeQualityOverFeatureGrid()
     
     ##############################################
@@ -122,6 +131,12 @@ def main():
     print("Logistic regression Recall score on test data: " + str(recall_score(y_test, preds)))
     print("Logistic regression Precision score on test data: " + str(precision_score(y_test, preds)))
     # Prec = 1, recall = 0.68 means no false negatives, erring on the side of labelling 1 (high quality)    
+
+    print("Extra trees score on training data: " + str(qp.xtrees.score(X_train, y_train)))
+    print("Extra trees score on test data: " + str(qp.xtrees.score(X_test, y_test)))
+    preds = qp.xtrees.predict(X_test)
+    print("Extra trees Recall score on test data: " + str(recall_score(y_test, preds)))
+    print("Extra trees Precision score on test data: " + str(precision_score(y_test, preds)))
     
     ##############################################
     # determine which features matter and drop the ones that don't
