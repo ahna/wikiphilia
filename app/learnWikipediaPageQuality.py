@@ -17,7 +17,7 @@ from sklearn import preprocessing
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import recall_score, precision_score
 import pickle
-from qualPred import qualPred
+import qualPred
 #from app.helpers.qualPred import qualPred
 #from qualityPredictor import qualPred
 from database import *
@@ -34,7 +34,7 @@ def optimizeRegConstant(logres):
 
 
 def main():
-    qp = qualPred() 
+    qp = qualPred.qualPred() 
     
     ##############################################
     # file names
@@ -108,11 +108,12 @@ def main():
     ##############################################
     # save results
     from os import chdir
-#    chdir('/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/')
+    chdir('/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/')
     with open(qualityPredictorFile, 'wb') as f:
         pickle.dump(qp,f)
     
     print qp.logres_clf.raw_coef_
+    chdir('/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/')
     with open(qualityPredictorFile, 'rb') as f:
         qp2 = pickle.load(f)
     print("Found: " + str(qp2))
@@ -149,6 +150,7 @@ def main():
     # for final app, ideally i'd compute this index on all of wikipedia
     #sklearn.linear_model.LogisticRegression.predict()    
     #sklearn.linear_model.LogisticRegression.predict()    
+    return qp
 
 
 if __name__ == '__main__': main()

@@ -25,7 +25,9 @@ def grabDatabaseSettingsFromCfgFile(configFileName ="app/settings/development.cf
             passwd = p[1].replace('"','')
         elif p[0] == 'DATABASE_DB':
             dbname = p[1].replace('"','')
-    return debug, host, port, user, passwd, dbname       
+        elif p[0] == 'LOCAL_PATH':
+            localpath = p[1].replace('"','')
+    return debug, host, port, user, passwd, dbname, localpath       
         
 # Returns MySQL database connection
 # with parameter set in .cfg file

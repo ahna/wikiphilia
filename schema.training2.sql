@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS training2 (
   SMOGIndex DECIMAL(5,3) NULL,
   flags INT NULL,
   flagged INT NULL,
+  featured INT NULL,
   score DECIMAL(4,2) NULL,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB;

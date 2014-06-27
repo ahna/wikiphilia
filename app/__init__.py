@@ -24,6 +24,7 @@ port = app.config["DATABASE_PORT"]
 user = app.config["DATABASE_USER"]
 passwd = app.config["DATABASE_PASSWORD"]
 db = app.config["DATABASE_DB"]
+localpath = app.config["LOCAL_PATH"]
 
 
 from app import views

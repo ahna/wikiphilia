@@ -11,15 +11,12 @@ from bs4 import BeautifulSoup
 import pymysql
 import pandas as pd
 from database import *
-from qualPred import qualPred
+#from qualPred import qualPred
 #from app.helpers.readability_score.calculators.fleschkincaid import *
-#from app.helpers.qualityPredictor import qualPred
 
-#qpfile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/qualityPredictorFile.p'
-qpfile = '/home/ubuntu/wikiphilia/app/qualityPredictorFile.p'
-#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
-configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
-debug, host, port, user, passwd, dbname = grabDatabaseSettingsFromCfgFile(configFileName)
+configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+#configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
+#debug, host, port, user, passwd, dbname, localpath = grabDatabaseSettingsFromCfgFile(configFileName)
 
 
 ##########################################################################################################
@@ -39,16 +36,19 @@ def convert_types(row):
 
 ##########################################################################################################
 # grab the quality predictor object
-def getQualPred(qpfile=qpfile):
+def getQualPred(qpfile):
     # open quality predictor
     import pickle
-    print "imported modules"
+    from os import chdir, getcwd
+    print getcwd()
+#    chdir('app')
+#    print getcwd()
+    from app.qualPred import qualPred
     with open(qpfile, 'rb') as f:
-        print("loaded file")
         qp = pickle.load(f)
     print "got qp!"
     return qp
-
+    
 ##########################################################################################################                 
 class wikiScraper():
 
@@ -64,7 +64,13 @@ class wikiScraper():
      'nRefs', 'nWordsSummary','pageId','revisionId','title','url','reading_ease','grade_level',\
      'ColemanLiauIndex','GunningFogIndex','ARI','SMOGIndex',\
      'flags','flagged','score']
-       
+      
+    def setUpDB(self, configFileName):
+        self.configFileName = configFileName
+        debug, self.host, self.port, self.user, self.passwd, self.dbname, localpath = grabDatabaseSettingsFromCfgFile(self.configFileName)
+        self.qpfile = localpath + 'app/qualityPredictorFile.p'
+        
+        
     def login(self):
         self.site.login("ahnagirshick", "HMb58tfj") # login - required for read-restricted wikis
   
@@ -81,7 +87,7 @@ class wikiScraper():
     def grabWikiPageIDsFromDB(self):
         
         #conn = conDB(dbname = 'enwiki')
-        conn = conDB(host,dbname,passwd=passwd,port=port, user=user)
+        conn = conDB(self.host,self.dbname,passwd=self.passwd,port=self.port, user=self.user)
         cur = curDB(conn)
         cur.execute('''SELECT page_id FROM content_pages ORDER BY page_id''')
         self.pageids = cur.fetchall()
@@ -340,8 +346,7 @@ class wikiScraper():
             self.login()
             
         # open up database
-        conn = conDB(host,dbname,passwd=passwd,port=port, user=user)
-#        conn = conDB()
+        conn = conDB(self.host,self.dbname,passwd=self.passwd,port=self.port, user=self.user)
         cur = curDB(conn)
            
         print title, links
@@ -353,7 +358,14 @@ class wikiScraper():
         else:
             n = len(self.pageids)
             
-        qp = getQualPred()
+        import pickle
+        import qualPred
+#        import learnWikipediaPageQuality
+#        qp = learnWikipediaPageQuality.main()
+#        print qp
+#        print "learnt"        
+        with open(self.qpfile, 'rb') as f:
+            qp = pickle.load(f)
         print "Got qp"
         
         # for each link in the list    
@@ -452,8 +464,8 @@ class wikiScraper():
     # score entire database
     def scoreDB(self):
 
-        qp = getQualPred()
-        conn = conDB(host,dbname,passwd=passwd,port=port, user=user)
+        qp = getQualPred(self.qpfile)
+        conn = conDB(self.host,self.dbname,passwd=self.passwd,port=self.port, user=self.user)
 #        conn = conDB()
         import pandas.io.sql as psql
         
@@ -480,7 +492,7 @@ class wikiScraper():
     def checkPageInDB(self): 
                     
         # open up database
-        conn = conDB(host,dbname,passwd=passwd,port=port, user=user)
+        conn = conDB(self.host,self.dbname,passwd=self.passwd,port=self.port, user=self.user)
         #conn = conDB()
         cur = curDB(conn)
             
@@ -499,10 +511,11 @@ class wikiScraper():
 def main():
     # scrape a set of wikipedia pages and add them to the database
     ws = wikiScraper()
+    ws.setUpDB(configFileName)
     ws.grabWikiPageIDsFromDB()
     #ws.checkPageInDB()
-    ws.getWikiPagesMeta(iStart = 73897)
+    ws.getWikiPagesMeta(iStart = 88545)
 #    ws.scoreDB()
     
 
-if __name__ == '__main__': main()
+#if __name__ == '__main__': main()

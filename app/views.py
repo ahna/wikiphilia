@@ -7,32 +7,31 @@ Created on Fri Jun 13 13:42:00 2014
 """
 ###################################################################
 # set up
-from flask import render_template, request, json, Response
-import app
-from app import app, host, port, user, passwd, db
-from app.helpers.database import conDB, closeDB, grabDatabaseSettingsFromCfgFile
 import urllib
 import pickle
 import wikipedia
 import pandas.io.sql as psql
 import pymysql
-#from app.helpers import database
-#from app.helpers import scrapeWikipedia as sw
-from app.helpers import database
-from app.helpers import scrapeWikipedia as sw
-#from app.helpers.qualPred import qualPred
+from flask import render_template, request, json, Response
+import app
+from app import app, host, port, user, passwd, db
+from app.database import *
+from app import scrapeWikipedia as sw
+sw = reload(sw)
 from os import chdir, getcwd
 import numpy as np
-#configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
-configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
-debug, host, port, user, passwd, dbname = grabDatabaseSettingsFromCfgFile(configFileName)
 
+###################################################################
+#configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
+#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+#debug, host, port, user, passwd, dbname, localpath = grabDatabaseSettingsFromCfgFile(configFileName)
+configFileName = 'app/settings/development.cfg'
 
 ###################################################################
 # MAIN PAGE WITH SEARCH BOX
 @app.route('/')
 def index():
-    return render_template('index.html')     # Renders index.html
+    return render_template('index.html',text='')     # Renders index.html
    
 ###################################################################
 # SEARCH RESULTS
@@ -40,24 +39,30 @@ def index():
 def out():
     searchPhrase = request.form['searchPhrase']
     wikiscore, searchPhraseDF = getWikiScore(searchPhrase)
+    print "wikiscore is " + str(wikiscore)
+    if wikiscore is None:
+        "here"
+        return render_template('index.html',text='Please try again')
+        
     svgtxt = genSvg(searchPhrase, searchPhraseDF)
-    return render_template('vis.html', searchPhrase=searchPhrase, wikiscore=wikiscore, svgtxt=svgtxt, url=searchPhraseDF['url'][0])
+    return render_template('vis.html', searchPhrase=searchPhraseDF['title'][0], wikiscore=wikiscore, svgtxt=svgtxt, url=searchPhraseDF['url'][0])
 
 
 ###################################################################
 # GET WIKISCORE FOR THE SEARCH PHRASE
 def getWikiScore(searchPhrase):
     
-    # connect to database ###################################################
-    con = conDB(host,dbname,passwd=passwd,port=port, user=user)
-
     # get wikipedia search results ####################################
     print searchPhrase    
     searchRes = wikipedia.search(searchPhrase, results=3, suggestion=False)
     print searchRes
     if len(searchRes) < 1:
-        return("Sorry. We didn't find any results for you. Please try a new search.")
+        print "Sorry. We didn't find any results for you. Please try a new search."
+        return None, searchRes
   
+    # connect to database ###################################################
+    con = conDB(host,db,passwd=passwd,port=port, user=user)
+
     # first check to see if search phrase results are already in database ############
     bAlreadyInDB = False 
     for i in range(len(searchRes)):
@@ -73,14 +78,15 @@ def getWikiScore(searchPhrase):
     # if the search phrase isn't in the data base, search and calculate score and add to db    
     if bAlreadyInDB is False:
         print("searchPhrase not in DB... retrieving info")
-        ws = sw.wikiScraper()
         #qp = sw.getQualPred()
         i = 0
         searchResultUse = searchRes[0]                
+        ws = sw.wikiScraper()
+        ws.setUpDB(configFileName)
         ws.getWikiPagesMeta(title = searchResultUse,tablename='testing2')
         sql = '''SELECT * FROM testing2 WHERE title="%s"'''%searchResultUse
         searchPhraseDF = psql.frame_query(sql, con)
-        if (searchPhraseDF) > 0:
+        if len(searchPhraseDF) > 0:
             bAlreadyInDB = True
         
     closeDB(con)
@@ -106,7 +112,7 @@ def getWikiScore(searchPhrase):
 def genSvg(searchPhrase, searchPhraseDF):
     
     #con = conDB(host='localhost', port=3306, user='root', dbname='wikimeta')
-    con = conDB(host,dbname,passwd=passwd,port=port, user=user)
+    con = conDB(host,db,passwd=passwd,port=port, user=user)
     cur = con.cursor()
 
     svgtxt = ""
