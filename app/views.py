@@ -71,7 +71,7 @@ def getWikiScore(searchPhrase):
         if len(searchPhraseDF['id']) > 0:
             bInDB = True
             searchResultUse = searchRes[i]
-            print("Found " + searchResultUse +" testing2 database")
+            #print("Found " + searchResultUse +" testing2 database")
             break
 
     # if the search phrase isn't in the data base, search and calculate score and add to db    
