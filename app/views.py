@@ -64,43 +64,46 @@ def getWikiScore(searchPhrase):
     con = conDB(host,db,passwd=passwd,port=port, user=user)
 
     # first check to see if search phrase results are already in database ############
-    bAlreadyInDB = False 
+    bInDB = False 
     for i in range(len(searchRes)):
         print i, searchRes[i]
         sql = '''SELECT * FROM testing2 WHERE title="%s"'''%searchRes[i]
         searchPhraseDF = psql.frame_query(sql, con)
         if len(searchPhraseDF['id']) > 0:
-            bAlreadyInDB = True
+            bInDB = True
             searchResultUse = searchRes[i]
             print("Found " + searchResultUse +" testing2 database")
             break
 
     # if the search phrase isn't in the data base, search and calculate score and add to db    
-    if bAlreadyInDB is False:
+    if bInDB is False:
         print("searchPhrase not in DB... retrieving info")
-        #qp = sw.getQualPred()
-        i = 0
-        searchResultUse = searchRes[0]                
         ws = sw.wikiScraper()
         ws.setUpDB(configFileName)
-        ws.getWikiPagesMeta(title = searchResultUse,tablename='testing2')
-        sql = '''SELECT * FROM testing2 WHERE title="%s"'''%searchResultUse
-        searchPhraseDF = psql.frame_query(sql, con)
-        if len(searchPhraseDF) > 0:
-            bAlreadyInDB = True
+        searchResultUse = None
+        for i in range(len(searchRes)):
+            score = ws.getWikiPagesMeta(title = searchRes[i],tablename='testing2')
+            print i, score
+            if score != None:
+                print
+                searchResultUse = searchRes[i]
+                break
+        if searchResultUse != None:
+            sql = '''SELECT * FROM testing2 WHERE title="%s"'''%searchResultUse
+            searchPhraseDF = psql.frame_query(sql, con)
+            if len(searchPhraseDF) > 0:
+                bInDB = True
         
     closeDB(con)
 
-    if bAlreadyInDB is True:
+    if bInDB is True:
         print("Using searchPhrase from database = " + searchResultUse)
         print searchPhraseDF        
         wikiscore = int(round(100.*(searchPhraseDF['score'][0])))
-#        if wikiscore is NULL:
-#            wikiscore = ws.scorePageDB(f,p,qp,conn)
         print("Score is " + str(searchPhraseDF['score'][0]) + ", " + str(wikiscore))
     else:
     	wikiscore = None
-        print("Sorry. We didn't find any results for you. Please try a new search.")
+        print("Sorry, we didn't find any suitable results for you at this time. Please try a new search.")
 
     print searchPhraseDF['url']
     print searchResultUse[0]
