@@ -33,7 +33,7 @@ def grabDatabaseSettingsFromCfgFile(configFileName ="app/settings/development.cf
 # with parameter set in .cfg file
 def conDB(host,dbname,passwd='',port=3306, user='root'):
     try:
-        con = pymysql.connect(host=host, port=port, user=user, passwd=passwd, db=dbname)
+        con = pymysql.connect(host=host, port=port, user=user, passwd=passwd, db=dbname, charset='utf8')
         print("Opened database " + dbname)
     
     except pymysql.Error, e:
