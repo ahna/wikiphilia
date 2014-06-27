@@ -14,7 +14,8 @@ from database import *
 #from qualPred import qualPred
 #from app.helpers.readability_score.calculators.fleschkincaid import *
 
-configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
+#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
 #configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
 #debug, host, port, user, passwd, dbname, localpath = grabDatabaseSettingsFromCfgFile(configFileName)
 
@@ -68,7 +69,8 @@ class wikiScraper():
     def setUpDB(self, configFileName):
         self.configFileName = configFileName
         debug, self.host, self.port, self.user, self.passwd, self.dbname, localpath = grabDatabaseSettingsFromCfgFile(self.configFileName)
-        self.qpfile = localpath + 'app/qualityPredictorFile.p'
+        print debug, self.host, self.port, self.user, self.passwd, self.dbname, localpath
+	self.qpfile = localpath + 'app/qualityPredictorFile.p'
         
         
     def login(self):
@@ -360,10 +362,11 @@ class wikiScraper():
             
         import pickle
         import qualPred
-#        import learnWikipediaPageQuality
-#        qp = learnWikipediaPageQuality.main()
-#        print qp
-#        print "learnt"        
+        import learnWikipediaPageQuality
+        print "about to learn"
+	qp = learnWikipediaPageQuality.main()
+        print qp
+        print "learnt"        
         with open(self.qpfile, 'rb') as f:
             qp = pickle.load(f)
         print "Got qp"
@@ -513,6 +516,8 @@ def main():
     ws = wikiScraper()
     ws.setUpDB(configFileName)
     ws.grabWikiPageIDsFromDB()
+    print ws
+    print len(ws.pageids)
     #ws.checkPageInDB()
     ws.getWikiPagesMeta(iStart = 88545)
 #    ws.scoreDB()

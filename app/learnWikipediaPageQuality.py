@@ -38,10 +38,12 @@ def main():
     
     ##############################################
     # file names
+    debug, host, port, user, passwd, dbname, localpath = grabDatabaseSettingsFromCfgFile(configFileName ="app/settings/development.cfg")
+    conn = conDB(host,dbname,passwd,port, user)	
     #featured_csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/featured.csv'
     #flagged_csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/flagged.csv'
     #qualityPredictorFile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/data/qualityPredictor.p'
-    qualityPredictorFile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/qualityPredictorFile.p'
+    qualityPredictorFile = localpath + 'app/qualityPredictorFile.p'
         
     ##############################################
     # load data from CSV file
@@ -56,8 +58,7 @@ def main():
     ##############################################
     # load data from database
     import pandas.io.sql as psql
-#    conn = conDB(host,dbname,passwd=passwd,port=port, user=user)
-    conn = conDB(host='localhost',dbname='wikimeta',passwd='wikiscore123',port=3306, user='root')
+    #conn = conDB(host,dbname,passwd=passwd,port=port, user=user)
     DF = psql.frame_query("SELECT * FROM training2", conn)
     closeDB(conn)
 
@@ -108,12 +109,12 @@ def main():
     ##############################################
     # save results
     from os import chdir
-    chdir('/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/')
+    #chdir('/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/')
     with open(qualityPredictorFile, 'wb') as f:
         pickle.dump(qp,f)
     
     print qp.logres_clf.raw_coef_
-    chdir('/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/')
+    #chdir('/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/')
     with open(qualityPredictorFile, 'rb') as f:
         qp2 = pickle.load(f)
     print("Found: " + str(qp2))
