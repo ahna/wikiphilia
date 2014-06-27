@@ -17,7 +17,6 @@ import app
 from app import app, host, port, user, passwd, db
 from app.database import *
 from app import scrapeWikipedia as sw
-sw = reload(sw)
 from os import chdir, getcwd
 import numpy as np
 
@@ -100,7 +99,7 @@ def getWikiScore(searchPhrase):
     if bInDB is True:
         print("Using searchPhrase from database = " + searchResultUse)
         print searchPhraseDF        
-        wikiscore = int(round(100.*(searchPhraseDF['score'][0])))
+        wikiscore = searchPhraseDF['score'][0]
         print("Score is " + str(searchPhraseDF['score'][0]) + ", " + str(wikiscore))
     else:
     	wikiscore = None
@@ -108,14 +107,21 @@ def getWikiScore(searchPhrase):
 
     print searchPhraseDF['url']
     print searchResultUse[0]
-    return wikiscore, searchPhraseDF
+    return normalizeWikiScore(wikiscore), searchPhraseDF
      
-
+###################################################################
+# map Wikiscores to a human-meaningful scale
+def normalizeWikiScore(rawScore):
+    origRange = (0.,1.)
+    newRange = (1.,10.)
+    m = (newRange[1]-newRange[0])/(origRange[1]-origRange[0])
+    normScore = int(round(m * rawScore + newRange[0]))
+    return normScore
+    
 ###################################################################
 # generate some HTML + SVG text for a single labelled bar
 def genSvg(searchPhrase, searchPhraseDF):
     
-    #con = conDB(host='localhost', port=3306, user='root', dbname='wikimeta')
     con = conDB(host,db,passwd=passwd,port=port, user=user)
     cur = con.cursor()
 
@@ -151,6 +157,7 @@ def genSvg(searchPhrase, searchPhraseDF):
         wikiMean = float(cur.fetchall()[0][0])
         meanFrac = (wikiMean - xmin)/(xmax-xmin)
         
+        # label the first bar
         if i == 0:
             bLabel = True
         else:
@@ -191,25 +198,10 @@ def genSvgBox(featureName,featFrac,xmin=0,xmax=100,x1=0,x2=350,meanFrac=0.5,bLab
 def data():
     wikiscore = getWikiScore()
 	
-    # prepare results to return:
-    resultFeatureVec = {'Mean Word Length':0.03646565,'# Links':0.03369929,'# References':0.09500643,'# Sections':0.05741374,'# Sentences':0.08198197,   '# Images':0.28234044,  '# Words in Intro':0.41309248}
-    featuredPageAvg = {'Mean Word Length':0.03646565,'# Links':0.03369929,'# References':0.09500643,'# Sections':0.05741374,'# Sentences':0.08198197,   '# Images':0.28234044,  '# Words in Intro':0.41309248}
-    flaggedPageAvg = {'Mean Word Length':0.03646565,'# Links':0.03369929,'# References':0.09500643,'# Sections':0.05741374,'# Sentences':0.08198197,   '# Images':0.28234044,  '# Words in Intro':0.41309248}
-    wikipediaAvg = {'Mean Word Length':0.03646565,'# Links':0.03369929,'# References':0.09500643,'# Sections':0.05741374,'# Sentences':0.08198197,   '# Images':0.28234044,  '# Words in Intro':0.41309248}
-
     # grab meta data for this wikipedia page ################################# 
-    #scores = {'meanWordLength':0.1,'nImages':0.1,'nLinks':0.1,'nRefs':0.1,'nSections':0.1,'nSents':0.1, 'nWordsSummary':0.1,'score':0.3}
-#    scores = {'meanWordLength':0.1,'nImages':0.1,'nLinks':0.1,'nRefs':0.1,'nSections':0.1,'nSents':0.1, 'nWordsSummary':0.1,'score':0.3}
-#    print scores
-#    print type(scores)
 #    out = {'results': [{'label': k, 'value': v} for k, v in featImpDict.iteritems()], 'searchPhrase': searchPhrase}
-#    out = {'results': [([{'label': k, 'value': v} for k, v in f.iteritems()]) for f in featImpDicts], \
-#    'searchPhrase': searchPhrase, 'url': searchPhraseDF['url'][0], 'wikiscore': wikiscore}
-    out = {'results': ([{'label': k, 'value': v} for k, v in resultFeatureVec.iteritems()]),\
-     'featuredPageAvg': ([{'label': k, 'value': v} for k, v in resultFeatureVec.iteritems()]), \
-     'flaggedPageAvg': ([{'label': k, 'value': v} for k, v in resultFeatureVec.iteritems()]), \
-     'wikipediaAvg': ([{'label': k, 'value': v} for k, v in resultFeatureVec.iteritems()]), \
-     'searchPhrase': searchResultUse, 'url': searchPhraseDF['url'][0], 'wikiscore': wikiscore}
+    out = {'results': [([{'label': k, 'value': v} for k, v in f.iteritems()]) for f in featImpDicts], \
+    'searchPhrase': searchPhrase, 'url': searchPhraseDF['url'][0], 'wikiscore': wikiscore}
     return Response(json.dumps(out), mimetype='application/json') 
     #return('The predicted quality of the Wikipedia page for ' + searchPhrase + ' is ' + str(score))
 
