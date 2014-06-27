@@ -82,8 +82,9 @@ def getWikiScore(searchPhrase):
         ws.setUpDB(configFileName)
         searchResultUse = None
         for i in range(len(searchRes)):
+            print i            
             score = ws.getWikiPagesMeta(title = searchRes[i],tablename='testing2')
-            print i, score
+            print score
             if score != None:
                 print
                 searchResultUse = searchRes[i]

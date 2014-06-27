@@ -322,6 +322,8 @@ class wikiScraper():
                 isIn = min(1,cur.fetchall()[0][0])
         elif title is not None:
             if datatable == 'testing2':
+                print title 
+                print type(title)
                 cur.execute('''SELECT COUNT(1) FROM testing2 WHERE title = %s ''', str(title))
                 isIn = min(1,cur.fetchall()[0][0])
             elif datatable == 'training2':
@@ -361,11 +363,11 @@ class wikiScraper():
             
         import pickle
         import qualPred
-        import learnWikipediaPageQuality
-        print "about to learn"
-	qp = learnWikipediaPageQuality.main()
-        print qp
-        print "learnt"        
+#        import learnWikipediaPageQuality
+#        print "about to learn"
+#        qp = learnWikipediaPageQuality.main()
+#        print qp
+#        print "learnt"        
         with open(self.qpfile, 'rb') as f:
             qp = pickle.load(f)
         print "Got qp"
