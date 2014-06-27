@@ -16,7 +16,6 @@ from database import *
 
 configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
 #configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
-#configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
 #debug, host, port, user, passwd, dbname, localpath = grabDatabaseSettingsFromCfgFile(configFileName)
 
 
@@ -87,7 +86,6 @@ class wikiScraper():
     ##########################################################################################################     
     # get pageids for all content articles
     def grabWikiPageIDsFromDB(self):
-        
         #conn = conDB(dbname = 'enwiki')
         conn = conDB(self.host,self.dbname,passwd=self.passwd,port=self.port, user=self.user)
         cur = curDB(conn)
@@ -339,6 +337,7 @@ class wikiScraper():
     def getWikiPagesMeta(self,links = 'NA',DF = 'NA',csvfilename = 'NA',iStart=0,title=None,flags=None,tablename='testing2'):
         import pandas as pd    
         p = None
+        score = None
         
         if csvfilename != 'NA': 
             if iStart > 0:
@@ -405,7 +404,9 @@ class wikiScraper():
                         new_row['flagged'] = False
                     else:
                         new_row['flagged'] = True
-                        new_row['score'] = 0                 
+                        new_row['score'] = 0
+                    
+                    score = new_row['score']
     
                     if csvfilename != 'NA':     
                         # write to csv file
@@ -419,6 +420,7 @@ class wikiScraper():
                             new_row2.append(new_row[u])
                         new_row = convert_types(list( new_row2))
                         print new_row
+
                         # insert row into database
                         if tablename == 'training2':
                             try:
@@ -442,7 +444,7 @@ class wikiScraper():
                                 print "Committed"
                                 f = dict(zip(self.iUseDB,new_row)) 
                                 f
-                                self.scorePageDB(f,p,qp,conn)
+                                score = self.scorePageDB(f,p,qp,conn)
                             except:
                                 print "Skipping for testing2:  "
     
@@ -452,13 +454,13 @@ class wikiScraper():
         # close up database
         closeDB(conn)
         
-        return True
+        return score
         
     ##########################################################################################################
     # score page and write to DB
     def scorePageDB(self,features,pageId,qp,conn):
         score = float(qp.qualityScore(features))
-        print "Scoring page " + str(pageId) + " with score = " + str(score)
+        print "Scoring page " + str(pageId) + " with score = " + str(score) + ", " + str(qp.qualityScore(features))
         curDB(conn).execute('''UPDATE testing2 SET score=%s WHERE pageId=%s''',(score,int(pageId)))
         conn.commit()
         return score
