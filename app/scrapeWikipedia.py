@@ -14,8 +14,8 @@ from database import *
 #from qualPred import qualPred
 #from app.helpers.readability_score.calculators.fleschkincaid import *
 
-configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
-#configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
+#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
 #debug, host, port, user, passwd, dbname, localpath = grabDatabaseSettingsFromCfgFile(configFileName)
 
 
@@ -85,7 +85,6 @@ class wikiScraper():
     ##########################################################################################################     
     # get pageids for all content articles
     def grabWikiPageIDsFromDB(self):
-        
         #conn = conDB(dbname = 'enwiki')
         conn = conDB(self.host,self.dbname,passwd=self.passwd,port=self.port, user=self.user)
         cur = curDB(conn)
