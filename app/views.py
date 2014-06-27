@@ -85,12 +85,14 @@ def getWikiScore(searchPhrase):
             score = ws.getWikiPagesMeta(title = searchRes[i],tablename='testing2')
             print score
             if score != None:
-                print
                 searchResultUse = searchRes[i]
                 break
         if searchResultUse != None:
+            print searchResultUse
+            print type(searchResultUse)
             sql = '''SELECT * FROM testing2 WHERE title="%s"'''%searchResultUse
             searchPhraseDF = psql.frame_query(sql, con)
+            print searchPhraseDF
             if len(searchPhraseDF) > 0:
                 bInDB = True
         
@@ -99,15 +101,15 @@ def getWikiScore(searchPhrase):
     if bInDB is True:
         print("Using searchPhrase from database = " + searchResultUse)
         print searchPhraseDF        
-        wikiscore = searchPhraseDF['score'][0]
+        wikiscore = normalizeWikiScore(searchPhraseDF['score'][0])
         print("Score is " + str(searchPhraseDF['score'][0]) + ", " + str(wikiscore))
     else:
-    	wikiscore = None
+        wikiscore = None
         print("Sorry, we didn't find any suitable results for you at this time. Please try a new search.")
 
     print searchPhraseDF['url']
     print searchResultUse[0]
-    return normalizeWikiScore(wikiscore), searchPhraseDF
+    return wikiscore, searchPhraseDF
      
 ###################################################################
 # map Wikiscores to a human-meaningful scale

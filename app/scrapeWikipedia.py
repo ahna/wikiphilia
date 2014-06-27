@@ -23,7 +23,7 @@ configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
 # SQL doesn't like the numpy types, so this function converts all items in row to types it likes       
 def convert_types(row):
     import numpy as np
-    type_dict = {np.float64:float, np.int64:int, np.bool_:bool, bool:bool, int:int, str:str, unicode:str,float:float}
+    type_dict = {np.float64:float, np.int64:int, np.bool_:bool, bool:bool, int:int, str:str, unicode:unicode,float:float}
     for j in range(len(row)):
         if row[j] == 'NA' or row[j] is None: # or (is_numlike(row[j]) and isnan(row[j])):
             row[j] = None  
@@ -324,11 +324,11 @@ class wikiScraper():
             if datatable == 'testing2':
                 print title 
                 print type(title)
-                cur.execute('''SELECT COUNT(1) FROM testing2 WHERE title = %s ''', str(title))
+                cur.execute('''SELECT COUNT(1) FROM testing2 WHERE title = %s ''', title)
                 isIn = min(1,cur.fetchall()[0][0])
             elif datatable == 'training2':
                 try:
-                    cur.execute('''SELECT COUNT(1) FROM training2 WHERE title = %s ''', str(title))                
+                    cur.execute('''SELECT COUNT(1) FROM training2 WHERE title = %s ''', title)
                 except:
                     return isIn
                 isIn = min(1,cur.fetchall()[0][0])
@@ -420,7 +420,7 @@ class wikiScraper():
                         new_row2 = list()
                         for u in self.iUseDB:
                             new_row2.append(new_row[u])
-                        new_row = convert_types(list( new_row2))
+                        new_row = convert_types(list(new_row2))
                         print new_row
 
                         # insert row into database
