@@ -99,7 +99,7 @@ def getWikiScore(searchPhrase):
     closeDB(con)
 
     if bInDB is True:
-        print("Using searchPhrase from database = " + searchResultUse)
+        #print("Using searchPhrase from database = " + searchResultUse)
         print searchPhraseDF        
         wikiscore = normalizeWikiScore(searchPhraseDF['score'][0])
         print("Score is " + str(searchPhraseDF['score'][0]) + ", " + str(wikiscore))
