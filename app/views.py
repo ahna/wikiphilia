@@ -165,7 +165,7 @@ def genSvg(searchPhraseDF = []):
             flaggedMean = float(cur.fetchall()[0][0])
         elif iUseFeatures[i] == 'grade_level':
             xmin = 5.; xmax = 15.
-            featureName = "Grade Level"
+            featureName = "Readability Grade Level"
             if len(searchPhraseDF) > 0: 
                 featureName += " = " + str(int(round(searchPhraseDF[iUseFeatures[i]])))
             cur.execute('''SELECT AVG(grade_level) FROM testing2''')
@@ -288,9 +288,9 @@ def genSvgBox(featureName,featFrac,xmin=0,xmax=100,x1=0,x2=350,wikiMeanFrac=None
             <text x="{xFeaturedMean3:.2f}" y="{y2}" fill="blue" text-anchor="start" font-size="16" font-weight="regular">Avg High Quality Page</text>
             """.format(xFeaturedMean=xFeaturedMean+1.5,xFeaturedMean2=xOffset+12,xFeaturedMean3=xOffset+15,y1=32+hOffset,y2=0+hOffset)
         else:
-             svgbox += """<line x1="{xFeaturedMean:.2f}" x2="{xFeaturedMean2:.2f}" y1="32" y2="20" stroke="blue" stroke-width="4" /> <!-- Line connecting featured mean line to text -->
+             svgbox += """<line x1="{xFeaturedMean:.2f}" x2="{xFeaturedMean2:.2f}" y1="32" y2="18" stroke="blue" stroke-width="4" /> <!-- Line connecting featured mean line to text -->
             <text x="{xFeaturedMean3:.2f}" y="12" fill="blue" text-anchor="start" font-size="16" font-weight="regular">Avg High Quality Page</text>
-            """.format(xFeaturedMean=xFeaturedMean+1.5,xFeaturedMean2=xFeaturedMean+9,xFeaturedMean3=xFeaturedMean-60)
+            """.format(xFeaturedMean=xFeaturedMean+1.5,xFeaturedMean2=xFeaturedMean+9,xFeaturedMean3=xFeaturedMean-40)
 
 
     if bLabelFlagged is True:
