@@ -13,7 +13,7 @@ class qualPred:
 #        self.featureNames = ['featured', 'flagged', 'flags', 'meanSentLength', 'meanWordLength', 'medianSentLength', 'medianWordLength', 'nChars', 'nImages', 'nLinks', 'nRefs', 'nSections', 'nSents', 'nWordsSummary', 'pageId', 'revisionId', 'title', 'url']
         #self.iUseFeatures = ['meanWordLength','nImages','nLinks','nRefs','nSections', 'nWordsSummary']
 #        self.iUseFeatures = ['nLinks','nWordsSummary']
-        self.iUseFeatures = ['nImages', 'nLinks','nRefs', 'nWordsSummary','reading_ease','grade_level']
+        self.iUseFeatures = ['nImages', 'nLinks','nRefs', 'nWordsSummary','grade_level']
         self.testPropor = 0.4
         #self.logresfile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/data/temp.p'
         self.rfclf = []

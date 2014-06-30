@@ -14,8 +14,8 @@ from database import *
 #from qualPred import qualPred
 #from app.helpers.readability_score.calculators.fleschkincaid import *
 
-configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
-#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+#configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
+configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
 #debug, host, port, user, passwd, dbname, localpath = grabDatabaseSettingsFromCfgFile(configFileName)
 
 
@@ -487,13 +487,43 @@ class wikiScraper():
             p = int(pageId.ix[f])
             score = self.scorePageDB(features,p,qp,conn)
             print(str(f) + " / " + str(len(featuresDF)) + " : " + str(score)  + " : " + str(p))
-
                    
         closeDB(conn)
 
  #   def removeDuplicates(self):
  #       ALTER IGNORE TABLE training2 ADD UNIQUE INDEX pageId (pageId);
  
+     ##########################################################################################################
+     # remeasure entire database on featuerd and flagged pages, and recalculate readability
+    def remeasureFeatFlagDB(self):
+
+#        qp = getQualPred(self.qpfile)
+        conn = conDB(self.host,self.dbname,passwd=self.passwd,port=self.port, user=self.user)
+        import pandas.io.sql as psql
+        pageIds = psql.frame_query("SELECT pageid FROM testing2 WHERE featured = 1 OR flagged = 1", conn)
+
+        # go through each page
+        print("Calculating readability & scores & writing to database...")
+        for i in range(5992, len(pageIds.values)):
+            p = pageIds.values[i]
+            sql = "SELECT * FROM testing2 WHERE pageid = %s" % p[0]
+            featuresDF = psql.frame_query(sql, conn)
+            print i, p[0], featuresDF['reading_ease'][0]
+            new_row = self.getWikiPageMeta2(title=featuresDF['title'][0], pageid=p[0])
+            print new_row
+
+            try:
+                sql = "UPDATE testing2 SET grade_level = %s WHERE pageId = %s" % (str(new_row['grade_level']),str(p[0]))
+                curDB(conn).execute(sql)
+                sql = "UPDATE testing2 SET reading_ease = %s WHERE pageId = %s" % (str(new_row['reading_ease']),str(p[0]))
+                curDB(conn).execute(sql)
+                conn.commit()
+            except:
+                print "Skipping for testing2:  "
+                pass            
+                        
+        closeDB(conn)
+        
    ##########################################################################################################
     # run through all the pages and write whether the page is in the database or not
     def checkPageInDB(self): 
@@ -518,12 +548,12 @@ class wikiScraper():
 def main():
     # scrape a set of wikipedia pages and add them to the database
     ws = wikiScraper()
-    ws.setUpDB(configFileName)
-    ws.grabWikiPageIDsFromDB()
-    print ws
-    print len(ws.pageids)
+    ws.remeasureFeatFlagDB()
+#    ws.grabWikiPageIDsFromDB()
+#    print ws
+#    print len(ws.pageids)
     #ws.checkPageInDB()
-    ws.getWikiPagesMeta(iStart = 88545)
+    #ws.getWikiPagesMeta(iStart = 88545)
 #    ws.scoreDB()
     
 

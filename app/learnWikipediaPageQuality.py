@@ -22,6 +22,9 @@ import qualPred
 #from qualityPredictor import qualPred
 from database import *
 
+#configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
+configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+
 def optimizeRegConstant(logres):
     # determine regularization constant. TO DO: make it so it returns best C. also might need to save and restore original C
     Cs = np.linspace(0.01,0.6,20)
@@ -38,7 +41,7 @@ def main():
     
     ##############################################
     # file names
-    debug, host, port, user, passwd, dbname, localpath = grabDatabaseSettingsFromCfgFile(configFileName ="app/settings/development.cfg")
+    debug, host, port, user, passwd, dbname, localpath = grabDatabaseSettingsFromCfgFile(configFileName)
     conn = conDB(host,dbname,passwd,port, user)	
     #featured_csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/featured.csv'
     #flagged_csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/flagged.csv'

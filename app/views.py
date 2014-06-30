@@ -30,7 +30,9 @@ configFileName = 'app/settings/development.cfg'
 # MAIN PAGE WITH SEARCH BOX
 @app.route('/')
 def index():
+    wiki_avg_svg = genSvgToFile('wiki.averages.svg')
     return render_template('index.html',text='')     # Renders index.html
+
    
 ###################################################################
 # SEARCH RESULTS
@@ -43,7 +45,7 @@ def out():
         "here"
         return render_template('index.html',text='Please try again')
         
-    svgtxt = genSvg(searchPhrase, searchPhraseDF)
+    svgtxt = genSvg(searchPhraseDF)
     return render_template('vis.html', searchPhrase=searchPhraseDF['title'][0], wikiscore=wikiscore, svgtxt=svgtxt, url=searchPhraseDF['url'][0])
 
 
@@ -121,79 +123,199 @@ def normalizeWikiScore(rawScore):
     return normScore
     
 ###################################################################
+def genSvgToFile(svgFileName = 'wiki.averages.svg'):
+    svg = genSvg()
+    file = open(svgFileName,'wb')
+    file.write(svg)
+    file.close()
+    return svg
+
+###################################################################
 # generate some HTML + SVG text for a single labelled bar
-def genSvg(searchPhrase, searchPhraseDF):
+def genSvg(searchPhraseDF = []):
     
     con = conDB(host,db,passwd=passwd,port=port, user=user)
     cur = con.cursor()
 
     svgtxt = ""
-    iUseFeatures = ['grade_level','reading_ease', 'nLinks', 'nRefs', 'nWordsSummary','nImages']
+    iUseFeatures = ['grade_level','nLinks', 'nRefs', 'nWordsSummary','nImages']
+    print genSvg
     for i in range(len(iUseFeatures)):
+        # label the first bar
+        bLabelWikiMean = False
+        bLabelFlagged = False
+        bLabelFeatured = False
+        if i == 0:
+            bLabelFeatured = True
+            print searchPhraseDF
+            if len(searchPhraseDF) == 0:
+                bLabelWikiMean = True
+                bLabelFlagged = True
+
         if iUseFeatures[i] == 'reading_ease':
             xmin = 0.; xmax = 100.
             featureName = "Reading Ease"
+            if len(searchPhraseDF) > 0: 
+                 featureName += " = " + str(int(round(searchPhraseDF[iUseFeatures[i]])))
             cur.execute('''SELECT AVG(reading_ease) FROM testing2''')
+            wikiMean = float(cur.fetchall()[0][0])
+            cur.execute('''SELECT AVG(reading_ease) FROM testing2 WHERE featured = 1''')
+            featuredMean = float(cur.fetchall()[0][0])
+            cur.execute('''SELECT AVG(reading_ease) FROM testing2 WHERE flagged = 1''')
+            flaggedMean = float(cur.fetchall()[0][0])
         elif iUseFeatures[i] == 'grade_level':
-            xmin = 0.; xmax = 20.
+            xmin = 5.; xmax = 15.
             featureName = "Grade Level"
+            if len(searchPhraseDF) > 0: 
+                featureName += " = " + str(int(round(searchPhraseDF[iUseFeatures[i]])))
             cur.execute('''SELECT AVG(grade_level) FROM testing2''')
+            wikiMean = float(cur.fetchall()[0][0])
+            cur.execute('''SELECT AVG(grade_level) FROM testing2 WHERE featured = 1''')
+            featuredMean = float(cur.fetchall()[0][0])
+            cur.execute('''SELECT AVG(grade_level) FROM testing2 WHERE flagged = 1''')
+            flaggedMean = float(cur.fetchall()[0][0])
         elif iUseFeatures[i] == 'nRefs':
-            xmin = 0.; xmax = 500.
+            xmin = 0.; xmax = 100.
             featureName = "# External Links"
+            if len(searchPhraseDF) > 0: 
+                featureName += " = " +  str(int(round(searchPhraseDF[iUseFeatures[i]])))
             cur.execute('''SELECT AVG(nRefs) FROM testing2''')
+            wikiMean = float(cur.fetchall()[0][0])
+            cur.execute('''SELECT AVG(nRefs) FROM testing2 WHERE featured = 1''')
+            featuredMean = float(cur.fetchall()[0][0])
+            cur.execute('''SELECT AVG(nRefs) FROM testing2 WHERE flagged = 1''')
+            flaggedMean = float(cur.fetchall()[0][0])
         elif iUseFeatures[i] == 'nLinks':
             xmin = 0.; xmax = 500.
             featureName = "# Wikipedia links"
+            if len(searchPhraseDF) > 0: 
+                 featureName += " = " +  str(int(round(searchPhraseDF[iUseFeatures[i]])))
             cur.execute('''SELECT AVG(nLinks) FROM testing2''')
+            wikiMean = float(cur.fetchall()[0][0])
+            cur.execute('''SELECT AVG(nLinks) FROM testing2 WHERE featured = 1''')
+            featuredMean = float(cur.fetchall()[0][0])
+            cur.execute('''SELECT AVG(nLinks) FROM testing2 WHERE flagged = 1''')
+            flaggedMean = float(cur.fetchall()[0][0])
         elif iUseFeatures[i] == 'nImages':
-            xmin = 0.; xmax = 100.
+            xmin = 0.; xmax = 50.
             featureName = "# Images"
+            if len(searchPhraseDF) > 0: 
+                 featureName += " = " +  str(int(round(searchPhraseDF[iUseFeatures[i]])))
             cur.execute('''SELECT AVG(nImages) FROM testing2''')
+            wikiMean = float(cur.fetchall()[0][0])
+            cur.execute('''SELECT AVG(nImages) FROM testing2 WHERE featured = 1''')
+            featuredMean = float(cur.fetchall()[0][0])
+            cur.execute('''SELECT AVG(nImages) FROM testing2 WHERE flagged = 1''')
+            flaggedMean = float(cur.fetchall()[0][0])
         elif iUseFeatures[i] == 'nWordsSummary':
-            xmin = 0.; xmax = 1000.
+            xmin = 30.; xmax = 500.
             featureName = "# Words in Intro"
+            if len(searchPhraseDF) > 0: 
+                 featureName += " = " +  str(int(round(searchPhraseDF[iUseFeatures[i]])))
             cur.execute('''SELECT AVG(nWordsSummary) FROM testing2''')
+            wikiMean = float(cur.fetchall()[0][0])
+            cur.execute('''SELECT AVG(nWordsSummary) FROM testing2 WHERE featured = 1''')
+            featuredMean = float(cur.fetchall()[0][0])
+            cur.execute('''SELECT AVG(nWordsSummary) FROM testing2 WHERE flagged = 1''')
+            flaggedMean = float(cur.fetchall()[0][0])
 
-        featFrac = (searchPhraseDF[iUseFeatures[i]][0] - xmin)/(xmax-xmin)
-        wikiMean = float(cur.fetchall()[0][0])
-        meanFrac = (wikiMean - xmin)/(xmax-xmin)
-        
-        # label the first bar
-        if i == 0:
-            bLabel = True
+        if len(searchPhraseDF) > 0: 
+            featFrac = (max(min(searchPhraseDF[iUseFeatures[i]][0], xmax), xmin) - xmin)/(xmax-xmin)
+            wikiMeanFrac = None
+            flaggedMeanFrac = None
         else:
-            bLabel = False
+            # analtics image
+            featFrac = 0
+            wikiMeanFrac = (wikiMean - xmin)/(xmax-xmin)
+            flaggedMeanFrac = (flaggedMean - xmin)/(xmax-xmin)
 
-        svgtxt += genSvgBox(featureName,featFrac,xmin=xmin,xmax=xmax,meanFrac=meanFrac,bLabel=bLabel)
+        featuredMeanFrac = (featuredMean - xmin)/(xmax-xmin)
+        #print featFrac, wikiMeanFrac, featuredMeanFrac,  flaggedMeanFrac
+        
+        svgtxt += genSvgBox(featureName,featFrac,xmin=xmin,xmax=xmax,wikiMeanFrac=wikiMeanFrac,\
+        featuredMeanFrac=featuredMeanFrac,flaggedMeanFrac=flaggedMeanFrac,bLabelWikiMean=bLabelWikiMean,bLabelFlagged=bLabelFlagged,bLabelFeatured=bLabelFeatured)
     
     closeDB(con)
     return svgtxt
     
-# create a set fo labelled bars for each feature name
-def genSvgBox(featureName,featFrac,xmin=0,xmax=100,x1=0,x2=350,meanFrac=0.5,bLabel=False):
-    xLocFeat=x1+featFrac*(x2-x1)
-    xLocWikiMean=x1+meanFrac*(x2-x1)
-    print featureName,xLocFeat, xLocWikiMean
+# create a set for labelled bars for each feature name
+def genSvgBox(featureName,featFrac,xmin=0,xmax=100,x1=0,x2=350,wikiMeanFrac=None,featuredMeanFrac=None,flaggedMeanFrac=None,bLabelWikiMean=False, bLabelFlagged=False, bLabelFeatured=False):
+    xFeat=x1+featFrac*(x2-x1)
+    if wikiMeanFrac != None:
+        xWikiMean=x1+wikiMeanFrac*(x2-x1)
+#    print featureName,xFeat, xWikiMean
+    if featuredMeanFrac != None:
+        xFeaturedMean=x1+featuredMeanFrac*(x2-x1)
+    if flaggedMeanFrac != None:
+        xFlaggedMean=x1+flaggedMeanFrac*(x2-x1)
+#    print xFeat, xWikiMean, xFeaturedMean, xFlaggedMean
+   
+    height = 100
+    hOffset = 0
+    xOffset = 292
+    if  bLabelWikiMean is True and bLabelFlagged is True and  bLabelFeatured is True:
+        hOffset = 32
+    height += hOffset
     
-    svgbox = """<svg width="500" height="100">
-		<text x="{xloc1:.2f}" y="25" fill="black" text-anchor="start" font-size="16" font-weight="regular">{featureName}</text>
-            <line x1="{xloc1:.2f}" y1="50" x2="{xloc2:.2f}" y2="50" stroke="#EEEEEE" stroke-width="40" /> <!-- Base bar -->
-            <line x1="{xloc1:.2f}" y1="50" x2="{xLocFeat:.2f}" y2="50" stroke="teal" stroke-width="40" stroke-opacity=0.5 /> <!-- Sub bar -->
-		<line x1="{xLocWikiMean:.2f}" y1="50" x2="{xLocWikiMean2:.2f}" y2="50" stroke="red" stroke-width="40" /> <!-- All of Wikipedia mean "line" -->
-            <text x="{xloc1:.2f}" y="85" fill="black" text-anchor="start" font-size="16" font-weight="regular">{xmin}</text>          
-            <text x="{xloc2:.2f}" y="85" fill="black" text-anchor="start" font-size="16" font-weight="regular">{xmax}</text>          
-         """.format(featureName=featureName,xloc1=x1,xloc2=x2,xLocFeat=xLocFeat,xLocWikiMean=xLocWikiMean,\
-         xLocWikiMean2=xLocWikiMean+4,xmin=int(xmin),xmax=int(xmax))
+    svgbox = """<svg width="500" height="{h}">
+		<text x="{xloc1:.2f}" y="{y}" fill="black" text-anchor="start" font-size="16" font-weight="regular">{featureName}</text>
+            <line x1="{xloc1:.2f}" y1="{y1}" x2="{xloc2:.2f}" y2="{y1}" stroke="#EEEEEE" stroke-width="40" /> <!-- Base bar -->
+            <line x1="{xloc1:.2f}" y1="{y1}" x2="{xFeat:.2f}" y2="{y1}" stroke="teal" stroke-width="40" stroke-opacity=0.5 /> <!-- Sub bar -->
+            <text x="{xloc1:.2f}" y="{y2}" fill="black" text-anchor="start" font-size="16" font-weight="regular">{xmin}</text>          
+            <text x="{xloc2:.2f}" y="{y2}" fill="black" text-anchor="start" font-size="16" font-weight="regular">{xmax}</text>          
+         """.format(h=height,featureName=featureName,xloc1=x1,xloc2=x2,xFeat=xFeat,xmin=int(xmin),xmax=int(xmax),y=25+hOffset, y1=50+hOffset, y2=85+hOffset)
+
+    if wikiMeanFrac != None:
+	svgbox += """<line x1="{xWikiMean:.2f}" y1="{y1}" x2="{xWikiMean2:.2f}" y2="{y1}" stroke="green" stroke-width="40" /> <!-- All of Wikipedia mean "line" -->
+         """.format(xWikiMean=xWikiMean,xWikiMean2=xWikiMean+4,y1=50+hOffset)
  
-    if bLabel is True:
-      svgbox += """<line x1="{xLocWikiMean:.2f}" x2="{xLocWikiMean2:.2f}" y1="68" y2="80" stroke="red" stroke-width="4" /> <!-- Line connecting mean line to text -->
-		<text x="{xLocWikiMean3:.2f}" y="90" fill="red" text-anchor="start" font-size="16" font-weight="regular">Wikipedia Mean</text>
-          """.format(xLocWikiMean=xLocWikiMean+2,xLocWikiMean2=xLocWikiMean+14,xLocWikiMean3=xLocWikiMean+20)
-  
+    if featuredMeanFrac != None:
+        svgbox += """<line x1="{xFeaturedMean:.2f}" y1="{y1}" x2="{xFeaturedMean2:.2f}" y2="{y1}" stroke="blue" stroke-width="40" /> <!-- Featured on Wikipedia mean "line" -->
+        """.format(xFeaturedMean=xFeaturedMean, xFeaturedMean2=xFeaturedMean+4,y1=50+hOffset)
+ 
+    if flaggedMeanFrac != None:
+        svgbox += """<line x1="{xFlaggedMean:.2f}" y1="{y1}" x2="{xFlaggedMean2:.2f}" y2="{y1}" stroke="red" stroke-width="40" /> <!-- Flagged on Wikipedia mean "line" -->
+        """.format(xFlaggedMean=xFlaggedMean, xFlaggedMean2=xFlaggedMean+4,y1=50+hOffset)
+
+    if bLabelWikiMean is True:
+        svgbox += """<line x1="{xWikiMean:.2f}" x2="{xWikiMean2:.2f}" y1="{y1}" y2="{y2}" stroke="green" stroke-width="4" /> <!-- Line connecting Wikipedia mean line to text -->
+		<text x="{xWikiMean3:.2f}" y="{y2}" fill="green" text-anchor="start" font-size="16" font-weight="regular">Wikipedia Avg</text>
+          """.format(xWikiMean=xWikiMean+1.5,xWikiMean2=xWikiMean+102,xWikiMean3=xOffset+15,y1=32+hOffset,y2=-20+hOffset)
+ 
+    if bLabelFeatured is True:
+        if bLabelWikiMean and bLabelFlagged:
+           svgbox += """<line x1="{xFeaturedMean:.2f}" x2="{xFeaturedMean2:.2f}" y1="{y1}" y2="{y2}" stroke="blue" stroke-width="4" /> <!-- Line connecting featured mean line to text -->
+            <text x="{xFeaturedMean3:.2f}" y="{y2}" fill="blue" text-anchor="start" font-size="16" font-weight="regular">Avg High Quality Page</text>
+            """.format(xFeaturedMean=xFeaturedMean+1.5,xFeaturedMean2=xOffset+12,xFeaturedMean3=xOffset+15,y1=32+hOffset,y2=0+hOffset)
+        else:
+             svgbox += """<line x1="{xFeaturedMean:.2f}" x2="{xFeaturedMean2:.2f}" y1="32" y2="20" stroke="blue" stroke-width="4" /> <!-- Line connecting featured mean line to text -->
+            <text x="{xFeaturedMean3:.2f}" y="12" fill="blue" text-anchor="start" font-size="16" font-weight="regular">Avg High Quality Page</text>
+            """.format(xFeaturedMean=xFeaturedMean+1.5,xFeaturedMean2=xFeaturedMean+9,xFeaturedMean3=xFeaturedMean-60)
+
+
+    if bLabelFlagged is True:
+        svgbox += """<line x1="{xFlaggedMean:.2f}" x2="{xFlaggedMean2:.2f}" y1="{y1}" y2="{y2}" stroke="red" stroke-width="4" /> <!-- Line connecting flagged mean line to text -->
+		<text x="{xFlaggedMean3:.2f}" y="{y2}" fill="red" text-anchor="start" font-size="16" font-weight="regular">Avg Low Quality Page</text>
+          """.format(xFlaggedMean=xFlaggedMean+1.5,xFlaggedMean2=xOffset+12,xFlaggedMean3=xOffset+15,y1=32+hOffset,y2=20+hOffset)
+ 
     svgbox += """</svg>"""
     return svgbox
 
+#    if bLabelWikiMean is True:
+#        svgbox += """<line x1="{xWikiMean:.2f}" x2="{xWikiMean2:.2f}" y1="68" y2="80" stroke="green" stroke-width="4" /> <!-- Line connecting Wikipedia mean line to text -->
+#		<text x="{xWikiMean3:.2f}" y="90" fill="green" text-anchor="start" font-size="16" font-weight="regular">Wikipedia Avg</text>
+#          """.format(xWikiMean=xWikiMean+1,xWikiMean2=xWikiMean+14,xWikiMean3=xWikiMean+20)
+# 
+#    if bLabelFeatured is True:
+#        svgbox += """<line x1="{xFeaturedMean:.2f}" x2="{xFeaturedMean2:.2f}" y1="32" y2="20" stroke="blue" stroke-width="4" /> <!-- Line connecting featured mean line to text -->
+#		<text x="{xFeaturedMean3:.2f}" y="20" fill="blue" text-anchor="start" font-size="16" font-weight="regular">Avg High Quality Page</text>
+#          """.format(xFeaturedMean=xFeaturedMean+3,xFeaturedMean2=xFeaturedMean-9,xFeaturedMean3=xFeaturedMean-160)
+#
+#    if bLabelFlagged is True:
+#        svgbox += """<line x1="{xFlaggedMean:.2f}" x2="{xFlaggedMean2:.2f}" y1="32" y2="20" stroke="red" stroke-width="4" /> <!-- Line connecting flagged mean line to text -->
+#		<text x="{xFlaggedMean3:.2f}" y="20" fill="red" text-anchor="start" font-size="16" font-weight="regular">Avg Low Quality Page</text>
+#          """.format(xFlaggedMean=xFlaggedMean+1.5,xFlaggedMean2=xFlaggedMean+12,xFlaggedMean3=xFlaggedMean+15)
+          
 ###################################################################
 # routine puts data to /data.json
 @app.route('/data.json', methods=['POST', 'GET'])
@@ -248,6 +370,13 @@ def regularpage(pagename=None):
     # Renders author.html.
     return "You've arrived at " + pagename
     
+###################################################################
+# ANALYTICS PAGE WITH WITH MEANS ACROSS WIKIPEDIA
+@app.route('/analytics')
+def analytics():
+    wiki_avg_svg = genSvgToFile('wiki.averages.svg')
+    return render_template('vis.analytics.html',svgtxt=wiki_avg_svg)     # vis.analytics.html
+
     
 ###################################################################
 def suggest():
