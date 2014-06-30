@@ -43,7 +43,7 @@ def out():
     print "wikiscore is " + str(wikiscore)
     if wikiscore is None:
         "here"
-        return render_template('index.html',text='Please try again')
+        return render_template('index.html',text='Please try a new search')
         
     svgtxt = genSvg(searchPhraseDF)
     return render_template('vis.html', searchPhrase=searchPhraseDF['title'][0], wikiscore=wikiscore, svgtxt=svgtxt, url=searchPhraseDF['url'][0])
