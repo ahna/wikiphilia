@@ -548,6 +548,7 @@ class wikiScraper():
 def main():
     # scrape a set of wikipedia pages and add them to the database
     ws = wikiScraper()
+    ws.setUpDB(configFileName)
     ws.remeasureFeatFlagDB()
 #    ws.grabWikiPageIDsFromDB()
 #    print ws
@@ -557,4 +558,4 @@ def main():
 #    ws.scoreDB()
     
 
-if __name__ == '__main__': main()
+#if __name__ == '__main__': main()
