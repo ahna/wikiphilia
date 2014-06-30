@@ -64,9 +64,9 @@ def getWikiScore(searchPhrase):
     # connect to database ###################################################
     con = conDB(host,db,passwd=passwd,port=port, user=user)
 
-    # first check to see if search phrase results are already in database ############
+    # first check to see if first search phrase results are already in database ############
     bInDB = False 
-    for i in range(len(searchRes)):
+    for i in range(1): #range(len(searchRes)):
 #        print i, searchRes[i]
         sql = '''SELECT * FROM testing2 WHERE title="%s"'''%searchRes[i]
         searchPhraseDF = psql.frame_query(sql, con)
