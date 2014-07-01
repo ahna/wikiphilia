@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Views.py
-Created on Fri Jun 13 13:42:00 2014
+This handles the Flask app views for each of the different paths after wikiscore.co/*
 
+Created on Fri Jun 13 13:42:00 2014
 @author: ahna
 """
 ###################################################################
