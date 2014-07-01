@@ -27,5 +27,8 @@ isn't about distinguishing featured and flagged pages. The challenge is in refin
 algorithm to make meaningful Wikiscores. I drastically improved the meaningfulness of 
 the Wikiscore by removing all features related to page length (such as number of words). 
 
+I'm currently working on some analytics here: http://www.wikiscore.co/analytics
+
 This program uses:
-Python, the Natural Language Toolkit, the MediaWiki API, MySQL, Sci-kit Learn, Beautiful Soup
+Python, Flask, the Natural Language Toolkit, the MediaWiki API, MySQL, Sci-kit Learn, Beautiful Soup,
+Wikipedia (https://github.com/goldsmith/Wikipedia)
