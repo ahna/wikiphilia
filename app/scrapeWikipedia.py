@@ -307,7 +307,8 @@ class wikiScraper():
         if False: # optionally relearn the parameters. This generally should not be necessary except due to changes in learning algorithm or feature set
             import learnWikipediaPageQuality
             print "about to relearn"
-            qp = learnWikipediaPageQuality.main()
+            qp = qualPred.qualPred()
+            qp.learn() #qp = learnWikipediaPageQuality.main()
             print qp
             print "learnt"        
         with open(self.qpfile, 'rb') as f:
