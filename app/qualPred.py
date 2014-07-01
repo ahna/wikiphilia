@@ -111,6 +111,19 @@ class qualPred:
         X, y, test_size=self.testPropor, train_size=1-self.testPropor, random_state=np.random.random_integers(100))
 
     #########################################################################
+    def transformFeatures(self,featureVec):
+        # TO DO: write a function that takes a feature dictionary and bins certain features
+        # such as to not penalize pages for having more images, links, intro words than typical featured pages
+        t = []
+        for name in self.iUseFeatures:
+            if name == 'nImages':
+                # TO DO: put into discrete bins akin to small, medium, large with the large bin including the average number of images on featured pages, and anything bigger                
+                f = featureVec[name]
+                transFeat = 0 
+            t.append(transFeat)
+        return t    
+        
+    #########################################################################
     def fitData(self):
         self.randfor.fit(self.X_train, self.y_train)
         print self.randfor.score(self.X_test, self.y_test)

@@ -58,6 +58,7 @@ class wikiScraper():
     
     ##########################################################################################################     
     # return a readability structure that has fields corresponding to several readability measures (see readability.FleschKincaidGradeLevel())    
+    # WARNING: unwiedly function
     # TO DO: compress this function into a short loop with a few lines
     def getReadability(self):    
 #        import nltk
@@ -129,6 +130,7 @@ class wikiScraper():
             
     ##########################################################################################################    
     # convert wikipage title and/or page number to feature dict 
+    # WARNING: another unwiedly function
     def getWikiPageMeta(self,title=None,pageid=None):
         import wikipedia
         try:
