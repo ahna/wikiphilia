@@ -5,79 +5,39 @@ Created on Wed Jun 11 17:24:41 2014
 
 @author: ahna
 """
-
-import urllib2
-from bs4 import BeautifulSoup
+##########################################################################################################
+# import tools & config file name
 import pymysql
-import pandas as pd
 from database import *
-#from qualPred import qualPred
-#from app.helpers.readability_score.calculators.fleschkincaid import *
-
 #configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
 configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
-#debug, host, port, user, passwd, dbname, localpath = grabDatabaseSettingsFromCfgFile(configFileName)
 
 
-##########################################################################################################
-# SQL doesn't like the numpy types, so this function converts all items in row to types it likes       
-def convert_types(row):
-    import numpy as np
-    type_dict = {np.float64:float, np.int64:int, np.bool_:bool, bool:bool, int:int, str:str, unicode:unicode,float:float}
-    for j in range(len(row)):
-        if row[j] == 'NA' or row[j] is None: # or (is_numlike(row[j]) and isnan(row[j])):
-            row[j] = None  
-        else:
-            try:    
-                row[j] = type_dict[type(row[j])](row[j])
-            except:
-                row[j] = None
-    return row
-
-##########################################################################################################
-# grab the quality predictor object
-def getQualPred(qpfile):
-    # open quality predictor
-    import pickle
-    from os import chdir, getcwd
-    print getcwd()
-#    chdir('app')
-#    print getcwd()
-    from app.qualPred import qualPred
-    with open(qpfile, 'rb') as f:
-        qp = pickle.load(f)
-    print "got qp!"
-    return qp
     
 ##########################################################################################################                 
 class wikiScraper():
 
     def __init__(self):
-#        from wikitools import wiki
-#        self.site = wiki.Wiki("http://en.wikipedia.org/w/api.php")         
+        import pandas as pd
         self.wp = [] # place for current wikipedia page
-        self.method = 2 # which wiki api wrapper to use
-        self.DF = pd.DataFrame(columns=['meanWordLength','meanSentLength', 'medianSentLength',  'medianWordLength', \
-     'nChars','nImages', 'nLinks','nSections', 'nSents','nRefs', 'nWordsSummary','pageId','revisionId','title','url','reading_ease','grade_level',\
-     'ColemanLiauIndex','GunningFogIndex','ARI','SMOGIndex','flags','flagged','score'])
         self.iUseDB = ['meanWordLength','meanSentLength', 'nChars','nImages', 'nLinks','nSections', 'nSents',\
      'nRefs', 'nWordsSummary','pageId','revisionId','title','url','reading_ease','grade_level',\
      'ColemanLiauIndex','GunningFogIndex','ARI','SMOGIndex',\
      'flags','flagged','score']
+        self.DF = pd.DataFrame(columns=self.iUseDB)
       
+    ##########################################################################################################     
+    # set up database
     def setUpDB(self, configFileName):
         self.configFileName = configFileName
         debug, self.host, self.port, self.user, self.passwd, self.dbname, localpath = grabDatabaseSettingsFromCfgFile(self.configFileName)
-        print debug, self.host, self.port, self.user, self.passwd, self.dbname, localpath
-	self.qpfile = localpath + 'app/qualityPredictorFile.p'
-        
-        
-    def login(self):
-        self.site.login("ahnagirshick", "HMb58tfj") # login - required for read-restricted wikis
-  
+        self.qpfile = localpath + 'app/qualityPredictorFile.p'
+          
     ##########################################################################################################     
+    # get links to all  articles from a given URL
     def grabWikiLinksFromUrl(self,url):
-        # get links to all  articles
+        import urllib2
+        from bs4 import BeautifulSoup
         response = urllib2.urlopen(url)
         content = response.read()
         soup = BeautifulSoup(content, "xml")
@@ -86,64 +46,21 @@ class wikiScraper():
     ##########################################################################################################     
     # get pageids for all content articles
     def grabWikiPageIDsFromDB(self):
-        #conn = conDB(dbname = 'enwiki')
         conn = conDB(self.host,self.dbname,passwd=self.passwd,port=self.port, user=self.user)
         cur = curDB(conn)
         cur.execute('''SELECT page_id FROM content_pages ORDER BY page_id''')
         self.pageids = cur.fetchall()
         closeDB(conn)
-
-    ##########################################################################################################
-    # function to convert wikitools.api.APIResult to a clean dict 
-    def saveAPIRequestResult(result):
-        from wikitools import api
-        j = api.APIListResult(result['query']['pages'])[0]
-        fields = api.APIListResult(result['query']['pages'][j])
-        resultDict = {'pageid': -1, 'title': None, 'nimages': -1, 'nlinks':-1, 'nextlinks':-1, 'length': -1, 'ncategories':-1, 'revlastdate':-1}
-        #   resultDict = {'pageid': -1, 'title': None, 'nimages': -1, 'nlinks':-1, 'nextlinks':-1, 'length': -1, 'counter': -1, 'new': -1, 'ncategories':-1}
-        for f in fields:
-            if f != 'ns':
-                thisField = result['query']['pages'][j][f]
-                if f == 'images':
-                    resultDict['nimages'] = len(thisField) # to do: remove some of the standard images
-                elif f == 'pageid':
-                    resultDict['pageid'] = thisField
-                elif f == 'links':
-                    resultDict['nlinks'] = len(thisField) # num internal links
-                elif f == 'categories':
-                    resultDict['ncategories'] = len(thisField) # num internal links
-                elif f == 'extlinks':
-                    resultDict['nextlinks'] = len(thisField) # num external links
-                elif f == 'counters':
-                    resultDict['counter'] = thisField # If $wgDisableCounters is false, gives number of views. Otherwise, gives empty attribute.
-                elif f == 'new':
-                    resultDict['new'] = thisField # whether the page has only one revisio
-                elif f == 'length':
-                    resultDict['length'] = thisField
-                elif f == 'revisions':
-                    resultDict['revlastdate'] = thisField[0]['timestamp']
-                elif f == 'title':
-                    resultDict['title'] = thisField.encode('utf-8')
-        return resultDict
-
-    ##########################################################################################################
-    # method 1 uses the wikitools api (slow)
-    # convert wikipage title to dict with meta info
-    def getWikiPageMeta1(self,title):
-        from wikitools import api
-        self.login()
-        # create the request object & query the API
-        params = {'action':'query', 'titles':title, 'prop':'info|images|links|extlinks|categories|revisions', 'rvprop':'timestamp'}   # to do, see if i can get more info in the query  
-        request = api.APIRequest(self.site, params)
-        result = self.saveAPIRequestResult(request.query())
-        return result
     
+    ##########################################################################################################     
+    # return a readability structure that has fields corresponding to several readability measures (see readability.FleschKincaidGradeLevel())    
     def getReadability(self):    
-        import nltk
+#        import nltk
         from nltk_contrib.readability.readabilitytests import ReadabilityTool
         text = self.wp.content.encode('utf8')
         if len(text) == 0:
             return None
+        # strip out Notes and other irrelavant fields that will only add noise to the readability measures            
         try:
             i = text.find('== Notes and references ==')
             text = text[0:i] # don't use notes and references in readability measures
@@ -169,16 +86,15 @@ class wikiScraper():
             text = text[0:i] # don't use notes and references in readability measures
         except ValueError:
             pass   
-        if len(text) > 5:
+        if len(text) > 5: # don't measure readability on very short pages - causes errors and returns meaningless info
             readability = ReadabilityTool(text)    
         else:
             readability = None
         return readability
             
     ##########################################################################################################    
-    # method 2 uses the wikipedia api (faster)
-    # convert wikipage title to dict with meta info
-    def getWikiPageMeta2(self,title=None,pageid=None):
+    # convert wikipage title and/or page number to feature dict 
+    def getWikiPageMeta(self,title=None,pageid=None):
         from numpy import mean, median
         import wikipedia
         try:
@@ -335,39 +251,37 @@ class wikiScraper():
         return isIn
         
     ##########################################################################################################
-    # for each link, get some meta data and put in the table
+    # for each link, get some meta data and put in the database or csvfile
     def getWikiPagesMeta(self,links = 'NA',DF = 'NA',csvfilename = 'NA',iStart=0,title=None,flags=None,tablename='testing2'):
         import pandas as pd    
-        p = None
-        score = None
+        p = None; score = None
         
+        # if using a csvfile, load it into a dataframe from file and append to it
         if csvfilename != 'NA': 
             if iStart > 0:
-                self.DF = pd.DataFrame().from_csv(csvfilename) # load existing dataframe from file and append to it
+                self.DF = pd.DataFrame().from_csv(csvfilename) 
         
-        if self.method == 1: # method 1 uses the wikitools api (slow)
-            self.login()
-            
         # open up database
         conn = conDB(self.host,self.dbname,passwd=self.passwd,port=self.port, user=self.user)
         cur = curDB(conn)
            
         print title, links
-        if title is not None:
-            n = 1
-            iStart = 0
-        elif links != 'NA':
+        if title is not None: # either search by the title
+            n = 1; iStart = 0
+        elif links != 'NA': # or search by a list of links
             n = len(links)
-        else:
+        else: # or search by the page ids
             n = len(self.pageids)
             
+        # load up the learnt parameters   
         import pickle
         import qualPred
-#        import learnWikipediaPageQuality
-#        print "about to learn"
-#        qp = learnWikipediaPageQuality.main()
-#        print qp
-#        print "learnt"        
+        if False: # optionally relearn the parameters. This generally should not be necessary except due to changes in learning algorithm or feature set
+            import learnWikipediaPageQuality
+            print "about to relearn"
+            qp = learnWikipediaPageQuality.main()
+            print qp
+            print "learnt"        
         with open(self.qpfile, 'rb') as f:
             qp = pickle.load(f)
         print "Got qp"
@@ -375,26 +289,25 @@ class wikiScraper():
         # for each link in the list    
         for i in range(iStart,n):
             if title is None:
-                if links != 'NA':
-                    # dataframe method
-                    l = links[i]
+                if links != 'NA': 
+                    l = links[i] # dataframe method
                     print(str(i) +"/" + str(n) + ": " + l.text)
                     title = l.text.replace('"','') # fix for unicode junk
                 else:
-                    # database method
-                    p = self.pageids[i][0]
+                    p = self.pageids[i][0] # database method
 
             bPageInDB = self.pageInDB(cur,p=p,title=title,datatable=tablename)
             print "bPageInDB=" + str(bPageInDB) 
             # only continue if using data frame method or if page not alrady in data base
             if not bPageInDB:
-                        
-                if self.method == 1: # method 1 uses the wikitools api (slow)
-                    new_row = self.getWikiPageMeta1(title)
-                elif self.method == 2:
-                    if p is not None:
-                        print(str(i) +"/" + str(n) + ": " + str(p) + " in? : " + str(bPageInDB))
-                    new_row = self.getWikiPageMeta2(title,p)
+                     
+                new_row = None 
+                print "p = " + str(p)
+                if title is not None or p is not None: # grab 
+                    print(str(i) +"/" + str(n) + ": " + str(p) + " in? : " + str(bPageInDB))
+                    new_row = self.getWikiPageMeta(title,p)
+                    
+                    print new_row
                  
                 if new_row is not None: 
                     new_row['score'] = None                
@@ -490,26 +403,31 @@ class wikiScraper():
                    
         closeDB(conn)
 
- #   def removeDuplicates(self):
- #       ALTER IGNORE TABLE training2 ADD UNIQUE INDEX pageId (pageId);
+    ##########################################################################################################
+    # utility function to remove duplicate rows from training2 table
+    def removeDuplicates(self):
+        conn = conDB(self.host,self.dbname,passwd=self.passwd,port=self.port, user=self.user)
+        cur = curDB(conn)            
+        sql = 'ALTER IGNORE TABLE training2 ADD UNIQUE INDEX pageId (pageId)'
+        cur.execute(sql)
+        closeDB(conn)
  
-     ##########################################################################################################
-     # remeasure entire database on featuerd and flagged pages, and recalculate readability
+    ##########################################################################################################
+    # utility function to remeasure entire database on featuerd and flagged pages, and recalculate readability
     def remeasureFeatFlagDB(self):
 
-#        qp = getQualPred(self.qpfile)
         conn = conDB(self.host,self.dbname,passwd=self.passwd,port=self.port, user=self.user)
         import pandas.io.sql as psql
         pageIds = psql.frame_query("SELECT pageid FROM testing2 WHERE featured = 1 OR flagged = 1", conn)
 
-        # go through each page
+        # go through each page, rescrape features and write out readability to database
         print("Calculating readability & scores & writing to database...")
-        for i in range(5992, len(pageIds.values)):
+        for i in range(len(pageIds.values)):
             p = pageIds.values[i]
             sql = "SELECT * FROM testing2 WHERE pageid = %s" % p[0]
             featuresDF = psql.frame_query(sql, conn)
             print i, p[0], featuresDF['reading_ease'][0]
-            new_row = self.getWikiPageMeta2(title=featuresDF['title'][0], pageid=p[0])
+            new_row = self.getWikiPageMeta(title=featuresDF['title'][0], pageid=p[0])
             print new_row
 
             try:
@@ -525,23 +443,46 @@ class wikiScraper():
         closeDB(conn)
         
    ##########################################################################################################
-    # run through all the pages and write whether the page is in the database or not
+    # utility function: run through all the pages and write to screen whether the page is in the database or not
     def checkPageInDB(self): 
                     
-        # open up database
         conn = conDB(self.host,self.dbname,passwd=self.passwd,port=self.port, user=self.user)
-        #conn = conDB()
-        cur = curDB(conn)
-            
+        cur = curDB(conn)            
         n = len(self.pageids)
             
-        # for each link in the list    
-        for i in range(n):
+        for i in range(n):        # for each page in the page list    
             p = self.pageids[i][0]
             bPageInDB = self.pageInDB(cur,p=p,title=title)
-            print(str(i) +"/" + str(n) + ": " + str(p) + " in? : " + str(bPageInDB))
+            print(str(i) +"/" + str(n) + ": " + str(p) + " in : " + str(bPageInDB))
             
         closeDB(conn)    
+
+
+##########################################################################################################
+# SQL doesn't like the numpy types, so this utility function converts all items in row to types it likes       
+def convert_types(row):
+    import numpy as np
+    type_dict = {np.float64:float, np.int64:int, np.bool_:bool, bool:bool, int:int, str:str, unicode:unicode,float:float}
+    for j in range(len(row)):
+        if row[j] == 'NA' or row[j] is None: 
+            row[j] = None  
+        else:
+            try:    
+                row[j] = type_dict[type(row[j])](row[j])
+            except:
+                row[j] = None
+    return row
+
+##########################################################################################################
+# grab from disk the quality predictor object instance containing the learnt parameters
+def getQualPred(qpfile):
+    # open quality predictor
+    import pickle
+    from app.qualPred import qualPred
+    with open(qpfile, 'rb') as f:
+        qp = pickle.load(f)
+    print "got qp!"
+    return qp
 
 
 ##########################################################################################################

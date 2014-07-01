@@ -123,7 +123,7 @@ def main():
     print("Found: " + str(qp2))
 
     ##############################################
-    # caculate accuracy on test set
+    # print out accuracy, recall, precision on test set
     print("Random forest score on training data: " + str(qp.randfor.score(X_train, y_train)))
     print("Random forest score on test data: " + str(qp.randfor.score(X_test, y_test)))
     preds = qp.randfor.predict(X_test)
@@ -144,7 +144,7 @@ def main():
     print("Extra trees Precision score on test data: " + str(precision_score(y_test, preds)))
     
     ##############################################
-    # determine which features matter and drop the ones that don't
+    # Print out which features matter and drop the ones that don't
     print "Random forest feature importances:"
     print qp.iUseFeatures
     print qp.rfclf.feature_importances_
