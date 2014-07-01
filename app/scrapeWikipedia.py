@@ -13,7 +13,8 @@ Created on Wed Jun 11 17:24:41 2014
 import pymysql
 from database import *
 #configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
-configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+configFileName = 'app/settings/development.cfg'
 
     
 ##########################################################################################################                 
@@ -304,7 +305,7 @@ class wikiScraper():
         # load up the learnt parameters   
         import pickle
         import qualPred
-        if False: # optionally relearn the parameters. This generally should not be necessary except due to changes in learning algorithm or feature set
+        if True: # optionally relearn the parameters. This generally should not be necessary except due to changes in learning algorithm or feature set
             import learnWikipediaPageQuality
             print "about to relearn"
             qp = qualPred.qualPred()
