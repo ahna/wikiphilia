@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
 """
 learnWikipediaPageQuality.py
-Created on Wed Jun 11 17:16:22 2014
-Learn to predict the quality of Wikipedia pages
+Learn the quality of Wikipedia pages
+Featured Wikipedia pages are "high quality" (wikiscore = 1)
+Flagged Wikipedia pages are "low quality" (wikiscore = 0)
+Calculate a wikiscore as the probability that a given page is high quality
 
+Created on Wed Jun 11 17:16:22 2014
 @author: ahna
 """
 
+############################################################################################
+# set up
 import pandas as pd
 import numpy as np
 import sklearn
@@ -18,26 +23,13 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import recall_score, precision_score
 import pickle
 import qualPred
-#from app.helpers.qualPred import qualPred
-#from qualityPredictor import qualPred
 from database import *
-
 #configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
 configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
 
-def optimizeRegConstant(logres):
-    # determine regularization constant. TO DO: make it so it returns best C. also might need to save and restore original C
-    Cs = np.linspace(0.01,0.6,20)
-    scores = []
-    for c in Cs:
-        logres.set_params(clf__C=c).fit(X_train, y_train)
-        scores.append(logres.score(X_test,y_test))
-    print(np.array([Cs,scores]))
-    plt.plot(Cs,scores)
-
 
 def main():
-    qp = qualPred.qualPred() 
+    qp = qualPred.qualPred() # create quality prediction class instance
     
     ##############################################
     # file names
@@ -45,7 +37,6 @@ def main():
     conn = conDB(host,dbname,passwd,port, user)	
     #featured_csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/featured.csv'
     #flagged_csvfilename = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/datasets/flagged.csv'
-    #qualityPredictorFile = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/data/qualityPredictor.p'
     qualityPredictorFile = localpath + 'app/qualityPredictorFile.p'
         
     ##############################################
@@ -155,6 +146,20 @@ def main():
     #sklearn.linear_model.LogisticRegression.predict()    
     #sklearn.linear_model.LogisticRegression.predict()    
     return qp
+
+############################################################################################
+# utility function to calculate the best regularization constant C for a logistic regression classifier
+# currently plots the scores vs Cs
+# TO DO: make it so it returns best C. also might need to save and restore original C
+def optimizeRegConstant(logres):
+    Cs = np.linspace(0.01,0.6,20)
+    scores = []
+    for c in Cs:
+        logres.set_params(clf__C=c).fit(X_train, y_train)
+        scores.append(logres.score(X_test,y_test))
+    print(np.array([Cs,scores]))
+    import matplotlib.pyplot as plt
+    plt.plot(Cs,scores)
 
 
 if __name__ == '__main__': main()

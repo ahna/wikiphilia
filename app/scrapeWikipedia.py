@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-scrapeWikipedia
-Created on Wed Jun 11 17:24:41 2014
+scrapeWikipedia.py
+This file defines the wikiScraper class
+The wikiScraper scrapes specified wikipedia page(s) for specified feature(s)
+It calculates a wikiscore according to learnt parameters and stores all the results in a CSV file or database.
 
+Created on Wed Jun 11 17:24:41 2014
 @author: ahna
 """
 ##########################################################################################################
@@ -22,8 +25,7 @@ class wikiScraper():
         self.wp = [] # place for current wikipedia page
         self.iUseDB = ['meanWordLength','meanSentLength', 'nChars','nImages', 'nLinks','nSections', 'nSents',\
      'nRefs', 'nWordsSummary','pageId','revisionId','title','url','reading_ease','grade_level',\
-     'ColemanLiauIndex','GunningFogIndex','ARI','SMOGIndex',\
-     'flags','flagged','score']
+     'ColemanLiauIndex','GunningFogIndex','ARI','SMOGIndex','flags','flagged','score']
         self.DF = pd.DataFrame(columns=self.iUseDB)
       
     ##########################################################################################################     
@@ -95,40 +97,38 @@ class wikiScraper():
     ##########################################################################################################    
     # convert wikipage title and/or page number to feature dict 
     def getWikiPageMeta(self,title=None,pageid=None):
-        from numpy import mean, median
         import wikipedia
         try:
             self.wp = wikipedia.page(title=title,pageid=pageid,auto_suggest=1)
         except:
-            print "Skipped pageid " + str(pageid)    
+            print "Skipped pageid " + str(pageid) + " because wikipedia search yielded no results"   
             return None
-
-        results = dict()
         
+        results = dict()
+        from numpy import mean, median
+
         # figure out where notes and references section starts
         doNotUse = ['==','Further','reading','Notes','References']
         iNoteIdx = self.wp.content.find("Notes and references")
         nonRef = self.wp.content[0:iNoteIdx-1]
-        #ref = wp.content[iNoteIdx:len(wp.content)]
         sentences = nonRef.split('.')
         words = nonRef.split()
         if len(self.wp.content) < 5:
             bNoText = 1
-            print "No text!"
+            print "No text on this Wikipedia page!"
         else:
-            bNoText = 0
-        
+            bNoText = 0        
+  
+        # measure readibility of text
         if (bNoText == 0) and ('reading_ease' in self.iUseDB or 'grade_level' in self.iUseDB):
-#            import nltk
-#            from nltk_contrib.readability.readabilitytests import ReadabilityTool
             readability = self.getReadability()
             if readability is None:
                 bNoText = 1
 
+        # main loop: cycle through feature list a do the appropriate measure for each, saving to results
         for iUse in self.iUseDB:   
-            
-            # sentence statistics
-            if iUse == 'nSents':
+                
+            if iUse == 'nSents': # sentence statistics
                 if bNoText:
                     results['nSents'] = 0
                 else:
@@ -238,8 +238,6 @@ class wikiScraper():
                 isIn = min(1,cur.fetchall()[0][0])
         elif title is not None:
             if datatable == 'testing2':
-                print title 
-                print type(title)
                 cur.execute('''SELECT COUNT(1) FROM testing2 WHERE title = %s ''', title)
                 isIn = min(1,cur.fetchall()[0][0])
             elif datatable == 'training2':
@@ -251,7 +249,7 @@ class wikiScraper():
         return isIn
         
     ##########################################################################################################
-    # for each link, get some meta data and put in the database or csvfile
+    # for each wikipedia page, get some meta data and put in the database or csvfile
     def getWikiPagesMeta(self,links = 'NA',DF = 'NA',csvfilename = 'NA',iStart=0,title=None,flags=None,tablename='testing2'):
         import pandas as pd    
         p = None; score = None
@@ -298,16 +296,13 @@ class wikiScraper():
 
             bPageInDB = self.pageInDB(cur,p=p,title=title,datatable=tablename)
             print "bPageInDB=" + str(bPageInDB) 
-            # only continue if using data frame method or if page not alrady in data base
-            if not bPageInDB:
+            
+            if not bPageInDB: # only continue if page not already in data base
                      
                 new_row = None 
-                print "p = " + str(p)
                 if title is not None or p is not None: # grab 
                     print(str(i) +"/" + str(n) + ": " + str(p) + " in? : " + str(bPageInDB))
                     new_row = self.getWikiPageMeta(title,p)
-                    
-                    print new_row
                  
                 if new_row is not None: 
                     new_row['score'] = None                
@@ -362,17 +357,12 @@ class wikiScraper():
                                 score = self.scorePageDB(f,p,qp,conn)
                             except:
                                 print "Skipping for testing2:  "
-    
-    
-            i += 1  
-            
-        # close up database
-        closeDB(conn)
-        
+            i += 1              
+        closeDB(conn)     # close up database        
         return score
         
     ##########################################################################################################
-    # score page and write to DB
+    # score wikipedia page and write to DB
     def scorePageDB(self,features,pageId,qp,conn):
         score = float(qp.qualityScore(features))
         print "Scoring page " + str(pageId) + " with score = " + str(score) + ", " + str(qp.qualityScore(features))
@@ -381,17 +371,15 @@ class wikiScraper():
         return score
         
     ##########################################################################################################
-    # score entire database
+    # (re)score entire database based on features already in database (no new scraping here)
     def scoreDB(self):
 
-        qp = getQualPred(self.qpfile)
+        # open database and get features and pageID
         conn = conDB(self.host,self.dbname,passwd=self.passwd,port=self.port, user=self.user)
-#        conn = conDB()
         import pandas.io.sql as psql
-        
-#        featuresDF = psql.frame_query("SELECT meanWordLength,nImages,nLinks,nRefs,nSections,nSents, nWordsSummary FROM testing", conn)
         featuresDF = psql.frame_query("SELECT * FROM testing2", conn)
         pageId = psql.frame_query("SELECT pageId FROM testing2", conn)
+        qp = getQualPred(self.qpfile)
 
         # go through each page
         print("Calculating scores & writing to database...")
@@ -491,12 +479,10 @@ def main():
     ws = wikiScraper()
     ws.setUpDB(configFileName)
     ws.remeasureFeatFlagDB()
-#    ws.grabWikiPageIDsFromDB()
-#    print ws
-#    print len(ws.pageids)
+    #ws.grabWikiPageIDsFromDB()
     #ws.checkPageInDB()
     #ws.getWikiPagesMeta(iStart = 88545)
-#    ws.scoreDB()
+    #ws.scoreDB()
     
 
-#if __name__ == '__main__': main()
+if __name__ == '__main__': main()
