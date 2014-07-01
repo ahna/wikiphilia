@@ -118,28 +118,28 @@ class qualPred:
         self.xtrees.score(self.X_test,self.y_test)
 
         # print out report of accuracy, recall, precision on test set
+        preds = self.randfor.predict(self.X_test)
         print("Random forest score on training data: " + str(self.randfor.score(self.X_train, self.y_train)))
         print("Random forest score on test data: " + str(self.randfor.score(self.X_test, self.y_test)))
-        preds = self.randfor.predict(self.X_test)
-        print("Random forest Recall score on test data: " + str(recall_score(self.y_test, preds)))
-        print("Random forest Precision score on test data: " + str(precision_score(self.y_test, preds)))
+        print("Random forest recall score on test data: " + str(recall_score(self.y_test, preds)))
+        print("Random forest precision score on test data: " + str(precision_score(self.y_test, preds)))
     
-        print("Logistic regression Score on training data: " + str(self.logres.score(self.X_train, self.y_train)))
-        print("Logistic regression Score on test data: " + str(self.logres.score(self.X_test, self.y_test)))
-        preds = self.logres.predict(self.X_test)
-        print("Logistic regression Recall score on test data: " + str(recall_score(self.y_test, preds)))
-        print("Logistic regression Precision score on test data: " + str(precision_score(self.y_test, preds))) # Prec = 1, recall = 0.68 means no false negatives, erring on the side of labelling 1 (high quality)    
-    
-        print("Extra trees score on training data: " + str(self.xtrees.score(self.X_train, self.y_train)))
-        print("Extra trees score on test data: " + str(self.xtrees.score(self.X_test, self.y_test)))
-        preds = self.xtrees.predict(self.X_test)
-        print("Extra trees Recall score on test data: " + str(recall_score(self.y_test, preds)))
-        print("Extra trees Precision score on test data: " + str(precision_score(self.y_test, preds)))
-
-        # Print out which features matter and drop the ones that don't
-        print "Random forest feature importances:"
+        print "Random forest feature importances:"         # Print out which features matter and drop the ones that don't
         print self.iUseFeatures
         print self.rfclf.feature_importances_
+
+        preds = self.logres.predict(self.X_test)
+        print("Logistic regression score on training data: " + str(self.logres.score(self.X_train, self.y_train)))
+        print("Logistic regression score on test data: " + str(self.logres.score(self.X_test, self.y_test)))
+        print("Logistic regression recall score on test data: " + str(recall_score(self.y_test, preds)))
+        print("Logistic regression precision score on test data: " + str(precision_score(self.y_test, preds))) # Prec = 1, recall = 0.68 means no false negatives, erring on the side of labelling 1 (high quality)    
+    
+        preds = self.xtrees.predict(self.X_test)
+        print("Extra trees score on training data: " + str(self.xtrees.score(self.X_train, self.y_train)))
+        print("Extra trees score on test data: " + str(self.xtrees.score(self.X_test, self.y_test)))
+        print("Extra trees recall score on test data: " + str(recall_score(self.y_test, preds)))
+        print("Extra trees rrecision score on test data: " + str(precision_score(self.y_test, preds)))
+
         
     #########################################################################
     def save(self):    # save results to pickled object TO DO: consider removing data first
