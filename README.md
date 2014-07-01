@@ -1,84 +1,31 @@
-# InsightFL
-A basic template for building minimal web applications.
+# Wikiscore
 
-### Introduction
-InsightFL is a basic [Flask](http://flask.pocoo.org/) template created specifically to help budding
-data scientists in the [Insight Data Science](http://insightdatascience.com/) program get their web applications
-off the ground quickly. As a former Insight fellow, I spent way too much time troubleshooting the ins and outs of
-web development instead of focusing on what truly mattered, extracting insight from my data.
+## This simple web app lives at http://www.wikiscore.co
 
-InsightFL comes with all the necessary tools you'll need to create your web app quickly:
+Wikipedia is a living encyclopedia. Because it is crowdsourced, it differs from a 
+traditional encyclopedia in that there is no single editor, resulting in uneven editorial
+quality. Some pages have a single contributor, perhaps a student across the world. Other
+pages have thousands of editors vetting and debating the content in real time. Further,
+internet software now draws information directly from Wikipedia, such as the Google
+sidebar. As such, Wikipedia often provides the first exposure to new information.
 
-  1. [Twitter Bootstrap](http://getbootstrap.com/) for designing your web pages.
-  2. [Bower](http://bower.io/) to easily install third party libraries.
-  3. [Reveal.js](http://lab.hakim.se/reveal-js/#/) for creating amazing presentations in HTML.
-  4. And its already in version control from the [Git](http://git-scm.com/) go!
+To address the unevenness in quality, I delevelopped a Wikiscore: a quality measure for Wikipedia
+pages. The algorithm computing the Wikiscore is a work in progress, and has lots of room for
+improvement. I'd be happy for others to help refine it. It currently measures five features on each page:
+1. Flesch-Kincaid Readibility Grade Level 
+2. Number of links to other Wikipedia pages
+3. Number of links to external websites
+4. Length of the introduction
+5. Number of images
 
-To get started building your web app, follow the instructions below to setup your development and production
-environments.
+I scraped 100k Wikipedia pages. In order for my algorithm to learn what a quality page looked
+like, I used featured Wikipedia pages as a proxy for "high quality" (4248 pages) and flagged
+Wikipedia pages as a proxy for "low quality" (2468 pages). I used a random forest classifier
+from Scikit-learn with a 60/40 train/test split and achieved 96% accuracy, precision and recall
+on the test set. Thus the challenge isn't about distinguishing featured and flagged pages. 
+The challenge is in refining the algorithm to make meaningful Wikiscores. I drastically 
+improved the meaningfulness of the Wikiscore by removing all features related to page
+length (such as number of words). 
 
-### Getting Started <a name="getting-started"></a>
-#### System Requirements <a name="system-requirements"></a>
-1. [Python](https://www.python.org/downloads/)(v2.7+) with [pip](http://pip.readthedocs.org/en/latest/installing.html) installed.
-2. [node](http://nodejs.org/)(v0.10.26+) - make sure to install the packages with [npm](https://www.npmjs.org/): Windows: *.msi*, MacOSX: *.pkg*
-
-#### Dev Environment Setup <a name="environment-setup"></a>
-1. Fork the [project](https://github.com/stormpython/insightfl/fork) and clone the repository.
-
-  **Note:** It is helpful to change the repository name **before** cloning. In Github, click on `Settings` on the right-hand
-  side of your screen. Within the Settings box at the top of the screen, rename the repository and click `Rename`.
-
-  ```
-  git clone git@github.com:<username>/<project>.git
-  ```
-
-2. Change into the project directory and install node project dependencies.
-
-  ```
-  cd /path/to/project/directory
-  npm install
-  ```
-
-3. Install virtualenv and fire up a virtual environment.
-
-  ```
-  sudo pip install virtualenv
-  virtualenv venv
-  source venv/bin/activate
-  ```
-
-4. Install Python project dependencies.
-
-  ```
-  pip install -r requirements.txt
-  ```
-
-5. To test your application, run the server.py file: `python server.py`, and open your web browser to
-`localhost:5000`.
-
-That's it! You are ready to start coding your project.
-
-### Deploying to AWS
-
-*Note: the setup script assumes you are deploying to an Ubuntu **14.04** Server*
-
-1. Secure copy the setup script (located in the deployment directory) to the remote host.
-
-  ```
-  scp -i mykey.pem /path/to/setup.sh ubuntu@ec2-12-345-67-89.us-west-2.compute.amazonaws.com:~
-  ```
-
-  where `mykey.pem` is your downloaded key pair from Amazon and `@ec2-12-345-67-89.us-west-2.compute.amazonaws.com`
-  is your Amazon EC2 Public DNS.
-
-2. SSH into the remote host and run the setup script. Answer the questions when prompted and wait for
-the downloads to finish.
-
-  ```
-  ssh -i mykey.pem ubuntu@ec2-12-345-67-89.us-west-2.compute.amazonaws.com
-  source setup.sh
-  ```
-
-3. Open up a web browser and enter your public DNS: `ec2-12-345-67-89.us-west-2.compute.amazonaws.com`
-
-That's it, you should now have a fully functioning web app!
+This program uses:
+Python, the Natural Language Toolkit, the MediaWiki API, MySQL, Sci-kit Learn, Beautiful Soup
