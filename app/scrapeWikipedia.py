@@ -15,7 +15,6 @@ from database import *
 #configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
 configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
 
-
     
 ##########################################################################################################                 
 class wikiScraper():
@@ -56,6 +55,7 @@ class wikiScraper():
     
     ##########################################################################################################     
     # return a readability structure that has fields corresponding to several readability measures (see readability.FleschKincaidGradeLevel())    
+    # TO DO: compress this function into a short loop with a few lines
     def getReadability(self):    
 #        import nltk
         from nltk_contrib.readability.readabilitytests import ReadabilityTool
@@ -63,6 +63,36 @@ class wikiScraper():
         if len(text) == 0:
             return None
         # strip out Notes and other irrelavant fields that will only add noise to the readability measures            
+        try:            
+            i = text.find('== Band members ==')
+            text = text[0:i] # don't use notes and references in readability measures
+        except ValueError:
+            pass
+        try:            
+            i = text.find('== Filmography ==')
+            text = text[0:i] # don't use notes and references in readability measures
+        except ValueError:
+            pass
+        try:            
+            i = text.find('== Bibliography ==')
+            text = text[0:i] # don't use notes and references in readability measures
+        except ValueError:
+            pass
+        try:            
+            i = text.find('== Selected filmography ==')
+            text = text[0:i] # don't use notes and references in readability measures
+        except ValueError:
+            pass
+        try:            
+            i = text.find('== Selected works ==')
+            text = text[0:i] # don't use notes and references in readability measures
+        except ValueError:
+            pass
+        try:            
+            i = text.find('== Discography ==')
+            text = text[0:i] # don't use notes and references in readability measures
+        except ValueError:
+            pass
         try:
             i = text.find('== Notes and references ==')
             text = text[0:i] # don't use notes and references in readability measures

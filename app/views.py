@@ -23,7 +23,6 @@ import numpy as np
 ###################################################################
 #configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
 #configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
-#debug, host, port, user, passwd, dbname, localpath = grabDatabaseSettingsFromCfgFile(configFileName)
 configFileName = 'app/settings/development.cfg'
 
 ###################################################################
@@ -33,21 +32,18 @@ def index():
     wiki_avg_svg = genSvgToFile('wiki.averages.svg')
     return render_template('index.html',text='')     # Renders index.html
 
-   
 ###################################################################
 # SEARCH RESULTS
 @app.route('/out', methods=['POST','GET'])
 def out():
     searchPhrase = request.form['searchPhrase']
     wikiscore, searchPhraseDF = getWikiScore(searchPhrase)
-    print "wikiscore is " + str(wikiscore)
+    print "The Wikiscore is " + str(wikiscore)
     if wikiscore is None:
-        "here"
-        return render_template('index.html',text='Please try a new search')
+        return render_template('index.html',text='Please try a new search') # In case where we can't get a Wikiscore
         
-    svgtxt = genSvg(searchPhraseDF)
+    svgtxt = genSvg(searchPhraseDF) # analysis of features for this Wikipedia page
     return render_template('vis.html', searchPhrase=searchPhraseDF['title'][0], wikiscore=wikiscore, svgtxt=svgtxt, url=searchPhraseDF['url'][0])
-
 
 ###################################################################
 # GET WIKISCORE FOR THE SEARCH PHRASE
@@ -123,6 +119,7 @@ def normalizeWikiScore(rawScore):
     return normScore
     
 ###################################################################
+# generate the analysis of features as SVG and write to disk
 def genSvgToFile(svgFileName = 'wiki.averages.svg'):
     svg = genSvg()
     file = open(svgFileName,'wb')
@@ -131,15 +128,13 @@ def genSvgToFile(svgFileName = 'wiki.averages.svg'):
     return svg
 
 ###################################################################
-# generate some HTML + SVG text for a single labelled bar
+# generate some HTML + SVG text for a single labelled bar describing how this page fared on a single feature
 def genSvg(searchPhraseDF = []):
     
     con = conDB(host,db,passwd=passwd,port=port, user=user)
     cur = con.cursor()
-
     svgtxt = ""
     iUseFeatures = ['grade_level','nLinks', 'nRefs', 'nWordsSummary','nImages']
-    print genSvg
     for i in range(len(iUseFeatures)):
         # label the first bar
         bLabelWikiMean = False
@@ -224,7 +219,7 @@ def genSvg(searchPhraseDF = []):
             wikiMeanFrac = None
             flaggedMeanFrac = None
         else:
-            # analtics image
+            # analytics image
             featFrac = 0
             wikiMeanFrac = (wikiMean - xmin)/(xmax-xmin)
             flaggedMeanFrac = (flaggedMean - xmin)/(xmax-xmin)
@@ -237,18 +232,17 @@ def genSvg(searchPhraseDF = []):
     
     closeDB(con)
     return svgtxt
-    
+
+#####################################################################################    
 # create a set for labelled bars for each feature name
 def genSvgBox(featureName,featFrac,xmin=0,xmax=100,x1=0,x2=350,wikiMeanFrac=None,featuredMeanFrac=None,flaggedMeanFrac=None,bLabelWikiMean=False, bLabelFlagged=False, bLabelFeatured=False):
     xFeat=x1+featFrac*(x2-x1)
     if wikiMeanFrac != None:
         xWikiMean=x1+wikiMeanFrac*(x2-x1)
-#    print featureName,xFeat, xWikiMean
     if featuredMeanFrac != None:
         xFeaturedMean=x1+featuredMeanFrac*(x2-x1)
     if flaggedMeanFrac != None:
         xFlaggedMean=x1+flaggedMeanFrac*(x2-x1)
-#    print xFeat, xWikiMean, xFeaturedMean, xFlaggedMean
    
     height = 100
     hOffset = 0
@@ -292,7 +286,6 @@ def genSvgBox(featureName,featFrac,xmin=0,xmax=100,x1=0,x2=350,wikiMeanFrac=None
             <text x="{xFeaturedMean3:.2f}" y="12" fill="blue" text-anchor="start" font-size="16" font-weight="regular">Avg High Quality Page</text>
             """.format(xFeaturedMean=xFeaturedMean+1.5,xFeaturedMean2=xFeaturedMean+9,xFeaturedMean3=xFeaturedMean-40)
 
-
     if bLabelFlagged is True:
         svgbox += """<line x1="{xFlaggedMean:.2f}" x2="{xFlaggedMean2:.2f}" y1="{y1}" y2="{y2}" stroke="red" stroke-width="4" /> <!-- Line connecting flagged mean line to text -->
 		<text x="{xFlaggedMean3:.2f}" y="{y2}" fill="red" text-anchor="start" font-size="16" font-weight="regular">Avg Low Quality Page</text>
@@ -301,40 +294,17 @@ def genSvgBox(featureName,featFrac,xmin=0,xmax=100,x1=0,x2=350,wikiMeanFrac=None
     svgbox += """</svg>"""
     return svgbox
 
-#    if bLabelWikiMean is True:
-#        svgbox += """<line x1="{xWikiMean:.2f}" x2="{xWikiMean2:.2f}" y1="68" y2="80" stroke="green" stroke-width="4" /> <!-- Line connecting Wikipedia mean line to text -->
-#		<text x="{xWikiMean3:.2f}" y="90" fill="green" text-anchor="start" font-size="16" font-weight="regular">Wikipedia Avg</text>
-#          """.format(xWikiMean=xWikiMean+1,xWikiMean2=xWikiMean+14,xWikiMean3=xWikiMean+20)
-# 
-#    if bLabelFeatured is True:
-#        svgbox += """<line x1="{xFeaturedMean:.2f}" x2="{xFeaturedMean2:.2f}" y1="32" y2="20" stroke="blue" stroke-width="4" /> <!-- Line connecting featured mean line to text -->
-#		<text x="{xFeaturedMean3:.2f}" y="20" fill="blue" text-anchor="start" font-size="16" font-weight="regular">Avg High Quality Page</text>
-#          """.format(xFeaturedMean=xFeaturedMean+3,xFeaturedMean2=xFeaturedMean-9,xFeaturedMean3=xFeaturedMean-160)
-#
-#    if bLabelFlagged is True:
-#        svgbox += """<line x1="{xFlaggedMean:.2f}" x2="{xFlaggedMean2:.2f}" y1="32" y2="20" stroke="red" stroke-width="4" /> <!-- Line connecting flagged mean line to text -->
-#		<text x="{xFlaggedMean3:.2f}" y="20" fill="red" text-anchor="start" font-size="16" font-weight="regular">Avg Low Quality Page</text>
-#          """.format(xFlaggedMean=xFlaggedMean+1.5,xFlaggedMean2=xFlaggedMean+12,xFlaggedMean3=xFlaggedMean+15)
           
 ###################################################################
-# routine puts data to /data.json
+# routine puts data to /data.json 
+# Use this for any future D3 visualizations
 @app.route('/data.json', methods=['POST', 'GET'])
 def data():
-    wikiscore = getWikiScore()
-	
     # grab meta data for this wikipedia page ################################# 
-#    out = {'results': [{'label': k, 'value': v} for k, v in featImpDict.iteritems()], 'searchPhrase': searchPhrase}
-    out = {'results': [([{'label': k, 'value': v} for k, v in f.iteritems()]) for f in featImpDicts], \
-    'searchPhrase': searchPhrase, 'url': searchPhraseDF['url'][0], 'wikiscore': wikiscore}
+    wikiscore = getWikiScore()	
+    out = {'results': [([{'label': k, 'value': v} for k, v in f.iteritems()]) for f in featImpDicts],'searchPhrase': searchPhrase, 'url': searchPhraseDF['url'][0], 'wikiscore': wikiscore}
     return Response(json.dumps(out), mimetype='application/json') 
-    #return('The predicted quality of the Wikipedia page for ' + searchPhrase + ' is ' + str(score))
 
-
-###################################################################
-@app.route('/vis')
-def vis():
-    # Renders vis.html.
-    return render_template('vis.html')
 
 ###################################################################
 @app.route('/home')
@@ -376,75 +346,4 @@ def regularpage(pagename=None):
 def analytics():
     wiki_avg_svg = genSvgToFile('wiki.averages.svg')
     return render_template('vis.analytics.html',svgtxt=wiki_avg_svg)     # vis.analytics.html
-
-    
-###################################################################
-def suggest():
-   # make suggestions	
-   iUniq = [0]
-   if wikiscore < 1:  
-       nSuggest = 50
-       distances = qp.computeDistances([searchPhraseDF['nLinks'][0],searchPhraseDF['nWordsSummary'][0]])
-       f1_indices,f2_indices = qp.suggest(distances,thresh=0.9)
-       newscore = qp.randfor.predict_proba([f1_indices[0],f2_indices[0]])[0][1]
-       print searchPhraseDF['nLinks'][0],searchPhraseDF['nWordsSummary'][0],f1_indices[0],f2_indices[0],wikiscore,newscore
-
-       newPerf = np.zeros((nSuggest,3))
-       n = 0
-       ns = 0
-       while ns < nSuggest:
-           n0 = qp.randfor.predict_proba([f1_indices[n],searchPhraseDF['nWordsSummary'][0]])[0][1]
-           n1 = qp.randfor.predict_proba([searchPhraseDF['nLinks'][0],f2_indices[n]])[0][1]
-           if n0 != wikiscore and n1 != wikiscore:
-               # found suggestion that changed both scores                
-               newPerf[ns,0] = n0
-               newPerf[ns,1] = n1
-               newPerf[ns,2] = qp.randfor.predict_proba([f1_indices[n],f2_indices[n]])[0][1]
-               print n, newPerf[ns]
-               ns += 1
-           n += 1
-       print("n = " + str(n))
-     
-     
-    
-       newPerf = np.zeros((len(f1_indices),3))
-       coeff = np.zeros((len(f1_indices),1))
-       frac = np.zeros((len(f1_indices),2))
-       for n in range(100):
-           newPerf[n,0] = qp.randfor.predict_proba([f1_indices[n],searchPhraseDF['nWordsSummary'][0]])[0][1]
-           newPerf[n,1] = qp.randfor.predict_proba([searchPhraseDF['nLinks'][0],f2_indices[n]])[0][1]
-           newPerf[n,2] = qp.randfor.predict_proba([f1_indices[n],f2_indices[n]])[0][1]
-           coeff[n] = (newPerf[n,2]-wikiscore)/(newPerf[n,0]+newPerf[n,1])
-           frac[n,0] = newPerf[n,0]*coeff[n]
-           frac[n,1] = newPerf[n,1]*coeff[n]
-           #print n, newPerf[n],coeff[n],frac[n]
-#
-       # get unique fractions        
-       ncols = frac.shape[1]
-       dtype = frac.dtype.descr * ncols
-       struct = frac.view(dtype)
-       uniqFrac,iUniq = np.unique(struct,return_index=True) 
-       uniqFrac = uniqFrac.view(frac.dtype).reshape(-1, ncols)
-       iUniq.sort() # iUniq are indices into frac and coeff that provide new shapes, in order of score
-       print frac[iUniq]
-        #frac = qp.rfclf.feature_importances_ * (newscore - wikiscore)
-    
-    # put the feature importances into a dict
-    #featImpDict = qp.getFeatImpDict(qp.getFeatures(searchPhraseDF))
-    #featImpDict = {'Wikiscore = %s'%wikiscore :wikiscore,'Mean Word Length':0.03646565,'# Links':0.03369929,'# References':0.09500643,'# Sections':0.05741374,'# Sentences':0.08198197,   '# Images':0.28234044,  '# Words in Intro':0.41309248}
-   featImpDicts = []
-   for j in range(len(iUniq)):
-       if wikiscore >= 1:
-           featImpDict = {'Wikiscore = %s'%wikiscore :wikiscore}
-       elif newPerf[n,2] == 1:
-           i = iUniq[j]
-           featImpDict = {'Wikiscore = %s'%wikiscore :wikiscore, \
-           'Change # links %s -> %s' % (searchPhraseDF['nLinks'][0],int(f1_indices[i])): frac[i,0], \
-           'Change # intro words %s -> %s' % (searchPhraseDF['nWordsSummary'][0],int(f2_indices[i])): frac[i,1]}
-       else:
-           i = iUniq[j]
-           featImpDict = {'Wikiscore = %s'%wikiscore :wikiscore, \
-           'Change # links %s -> %s' % (searchPhraseDF['nLinks'][0],f1_indices[0]): frac[i,0], \
-           'Change # intro words %s -> %s' % (searchPhraseDF['nWordsSummary'][0],f2_indices[i]): frac[i,1], \
-           'room for improvement': 1-wikiscore-frac[0]-frac[1]}
-       featImpDicts.append(featImpDict)   
+ 

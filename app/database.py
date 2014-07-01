@@ -1,10 +1,14 @@
+# -*- coding: utf-8 -*-
+"""
+Database connection utility functions
+@author: ahna
+"""
+
 import pymysql
-import sys
-#import app
-	
+import sys	
 
-
-# DATABASE SETTINGS
+###############################################################################
+# load DATABASE SETTINGS from local file (not on git)
 def grabDatabaseSettingsFromCfgFile(configFileName ="app/settings/development.cfg"):
     file = open(configFileName, 'r')
     content = file.read()
@@ -29,8 +33,8 @@ def grabDatabaseSettingsFromCfgFile(configFileName ="app/settings/development.cf
             localpath = p[1].replace('"','')
     return debug, host, port, user, passwd, dbname, localpath       
         
-# Returns MySQL database connection
-# with parameter set in .cfg file
+###############################################################################
+# Establish and return MySQL database connection
 def conDB(host,dbname,passwd='',port=3306, user='root'):
     try:
         con = pymysql.connect(host=host, port=port, user=user, passwd=passwd, db=dbname, charset='utf8')
@@ -43,9 +47,13 @@ def conDB(host,dbname,passwd='',port=3306, user='root'):
     return con
 
 
+###############################################################################
+# return DB cursor
 def curDB(conn):
  	return conn.cursor()
 	
+###############################################################################
+# close the database
 def closeDB(conn):
 	curDB(conn).close()
 	conn.commit()

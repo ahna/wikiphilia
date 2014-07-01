@@ -75,6 +75,7 @@ def main():
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=qp.testPropor, train_size=1-qp.testPropor, random_state=np.random.random_integers(100))
 
     ##############################################
+    # create random forest classifier pipeline
     qp.rfclf = RandomForestClassifier(n_estimators=10) #look at feature_importances_
     qp.randfor = Pipeline([("scaler", preprocessing.StandardScaler()), ("clf", qp.rfclf)])
     qp.randfor.fit(X_train, y_train)
@@ -83,22 +84,19 @@ def main():
         print qp.iUseFeatures[i], qp.rfclf.feature_importances_[i]
         
     ##############################################
-    # build learning pipeline for logistic regression
+    # build learning pipeline for logistic regression classifier
     qp.logres_clf = sklearn.linear_model.LogisticRegression(C=0.35) 
     qp.logres = Pipeline([("scaler", preprocessing.StandardScaler()), ("clf", qp.logres_clf)])
     qp.logres.fit(X_train, y_train)
     qp.logres.score(X_test,y_test)
 
     ##############################################
-    # build learning pipeline for logistic regression
+    # build learning pipeline for extra trees classifier
     qp.xtrees_clf = sklearn.ensemble.ExtraTreesClassifier(n_estimators=10)
     qp.xtrees = Pipeline([("scaler", preprocessing.StandardScaler()), ("clf", qp.xtrees_clf)])
     qp.xtrees.fit(X_train, y_train)
     qp.xtrees.score(X_test,y_test)
 
-
-
-    #qp.computeQualityOverFeatureGrid()
     
     ##############################################
     # save results
@@ -107,12 +105,6 @@ def main():
     with open(qualityPredictorFile, 'wb') as f:
         pickle.dump(qp,f)
     
-    print qp.logres_clf.raw_coef_
-    #chdir('/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/')
-    with open(qualityPredictorFile, 'rb') as f:
-        qp2 = pickle.load(f)
-    print("Found: " + str(qp2))
-
     ##############################################
     # print out accuracy, recall, precision on test set
     print("Random forest score on training data: " + str(qp.randfor.score(X_train, y_train)))
