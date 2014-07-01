@@ -21,8 +21,8 @@ from os import chdir, getcwd
 import numpy as np
 
 ###################################################################
-#configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
-#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+#configFileName = '/home/ubuntu/wikiscore/app/settings/development.cfg'
+#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiscore/webapp/app/settings/development.cfg'
 configFileName = 'app/settings/development.cfg'
 
 ###################################################################

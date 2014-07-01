@@ -12,8 +12,8 @@ Created on Wed Jun 11 17:24:41 2014
 # import tools & config file name
 import pymysql
 from database import *
-#configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
-#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+#configFileName = '/home/ubuntu/wikiscore/app/settings/development.cfg'
+#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiscore/webapp/app/settings/development.cfg'
 configFileName = 'app/settings/development.cfg'
 
     
