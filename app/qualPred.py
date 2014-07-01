@@ -42,6 +42,7 @@ class qualPred:
         self.setUpData()
         self.fitData()
         self.save()
+        self.printReport()
         
     #########################################################################
     # return feature featureVector f for a particular featureVec dict
@@ -64,8 +65,11 @@ class qualPred:
     # return quality score between 0 (low quality) and 1 (high quality)    
     def qualityScore(self,featureVec):
         f = self.getFeatures(featureVec)
-        probs = self.randfor.predict_proba(f) 
-        return(probs[0][1]) # first element is prob of low quality, second element is prob of high quality
+        if len([x for x in f if np.isnan(x)]) > 0:
+            return 0.0
+        else:
+            probs = self.randfor.predict_proba(f) 
+            return(probs[0][1]) # first element is prob of low quality, second element is prob of high quality
 
     #########################################################################
     def featureImportances(self,featureVec):
@@ -117,7 +121,9 @@ class qualPred:
         self.xtrees.fit(self.X_train, self.y_train)
         self.xtrees.score(self.X_test,self.y_test)
 
-        # print out report of accuracy, recall, precision on test set
+    #########################################################################
+    # print out report of accuracy, recall, precision on test set
+    def printReport(self):
         preds = self.randfor.predict(self.X_test)
         print("Random forest score on training data: " + str(self.randfor.score(self.X_train, self.y_train)))
         print("Random forest score on test data: " + str(self.randfor.score(self.X_test, self.y_test)))
@@ -178,16 +184,19 @@ class qualPred:
     # this function is a bit of a hack not currently being used
     # make a list of suggestions for other combinations of features based on short distances that are above the threshold
     def suggest(self,distances,thresh=0.9):         
+        # first find the matrix indices of each distance, sorted in ascending order
         d2 = distances.reshape(len(self.f1)*len(self.f2),1)
         x2 = np.argsort(d2,axis=0)
         i1 = x2/len(self.f2)
         i2 = np.remainder(x2,len(self.f2))
+        # determine those above threshold
         t = self.featSpaceScores > thresh
         t3 = t[i1,i2]
         f1_temp = np.multiply(self.f1[i1],t3)
         f2_temp = np.multiply(self.f2[i2],t3)
         f1_indices = []
         f2_indices = []      
+        # make a list of the sorted above threshold indices in the original distances matrix 
         for f in range(len(f1_temp)):
             if f1_temp[f] != 0:
                 f1_indices.append(f1_temp[f][0])

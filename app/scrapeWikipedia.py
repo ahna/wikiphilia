@@ -11,10 +11,12 @@ Created on Wed Jun 11 17:24:41 2014
 ##########################################################################################################
 # import tools & config file name
 import pymysql
-from database import *
+from app.database import *
+import app.qualPred
+
+configFileName = 'app/settings/development.cfg'
 #configFileName = '/home/ubuntu/wikiscore/app/settings/development.cfg'
 #configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiscore/webapp/app/settings/development.cfg'
-configFileName = 'app/settings/development.cfg'
 
     
 ##########################################################################################################                 
@@ -304,11 +306,12 @@ class wikiScraper():
             
         # load up the learnt parameters   
         import pickle
-        import qualPred
-        if True: # optionally relearn the parameters. This generally should not be necessary except due to changes in learning algorithm or feature set
+        #import qualPred
+        if False: # optionally relearn the parameters. This generally should not be necessary except due to changes in learning algorithm or feature set
             import learnWikipediaPageQuality
             print "about to relearn"
-            qp = qualPred.qualPred()
+            #qp = qualPred.qualPred()
+            qp = qualPred()
             qp.learn() #qp = learnWikipediaPageQuality.main()
             print qp
             print "learnt"        
@@ -396,15 +399,16 @@ class wikiScraper():
     ##########################################################################################################
     # score wikipedia page and write to DB
     def scorePageDB(self,features,pageId,qp,conn):
+        print "Scoring page " + str(pageId) 
         score = float(qp.qualityScore(features))
-        print "Scoring page " + str(pageId) + " with score = " + str(score) + ", " + str(qp.qualityScore(features))
+        print "Scoring page " + str(pageId) + " with score = " + str(score) 
         curDB(conn).execute('''UPDATE testing2 SET score=%s WHERE pageId=%s''',(score,int(pageId)))
         conn.commit()
         return score
         
     ##########################################################################################################
     # (re)score entire database based on features already in database (no new scraping here)
-    def scoreDB(self):
+    def scoreDB(self,iStart = 0):
 
         # open database and get features and pageID
         conn = conDB(self.host,self.dbname,passwd=self.passwd,port=self.port, user=self.user)
@@ -415,11 +419,11 @@ class wikiScraper():
 
         # go through each page
         print("Calculating scores & writing to database...")
-        for f in range(len(pageId)):
+        for f in range(iStart,len(pageId)):
             features = featuresDF.ix[f]
             p = int(pageId.ix[f])
             score = self.scorePageDB(features,p,qp,conn)
-            print(str(f) + " / " + str(len(featuresDF)) + " : " + str(score)  + " : " + str(p))
+            print(str(f) + " / " + str(len(featuresDF)) + " : old / new scores " + str(features['score']) + " : " + str(score)  + " : page " + str(p))
                    
         closeDB(conn)
 
@@ -498,7 +502,7 @@ def convert_types(row):
 def getQualPred(qpfile):
     # open quality predictor
     import pickle
-    from app.qualPred import qualPred
+#    from app.qualPred import qualPred
     with open(qpfile, 'rb') as f:
         qp = pickle.load(f)
     print "got qp!"
@@ -510,11 +514,11 @@ def main():
     # scrape a set of wikipedia pages and add them to the database
     ws = wikiScraper()
     ws.setUpDB(configFileName)
-    ws.remeasureFeatFlagDB()
+    #ws.remeasureFeatFlagDB()
     #ws.grabWikiPageIDsFromDB()
     #ws.checkPageInDB()
     #ws.getWikiPagesMeta(iStart = 88545)
-    #ws.scoreDB()
+    ws.scoreDB(5051)
     
 
 if __name__ == '__main__': main()
