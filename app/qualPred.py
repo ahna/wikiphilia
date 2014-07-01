@@ -22,8 +22,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import recall_score, precision_score
 from database import *
 #configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
-configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
-
+#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
+configFileName = 'app/settings/development.cfg'
 
 #########################################################################
 class qualPred:
