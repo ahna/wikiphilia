@@ -58,14 +58,22 @@ class wikiScraper():
     
     ##########################################################################################################     
     # return a readability structure that has fields corresponding to several readability measures (see readability.FleschKincaidGradeLevel())    
-    # WARNING: unwiedly function
-    # TO DO: compress this function into a short loop with a few lines
     def getReadability(self):    
-#        import nltk
         from nltk_contrib.readability.readabilitytests import ReadabilityTool
         text = self.wp.content.encode('utf8')
         if len(text) == 0:
             return None
+        text = self.stripNotesFromText(text)
+        if len(text) > 5: # don't measure readability on very short pages - causes errors and returns meaningless info
+            readability = ReadabilityTool(text)    
+        else:
+            readability = None
+        return readability
+
+    ##########################################################################################################     
+    # WARNING: unwiedly function
+    # TO DO: compress this function into a short loop with a few lines
+    def stripNotesFromText(self,text):
         # strip out Notes and other irrelavant fields that will only add noise to the readability measures            
         try:            
             i = text.find('== Band members ==')
@@ -79,6 +87,11 @@ class wikiScraper():
             pass
         try:            
             i = text.find('== Bibliography ==')
+            text = text[0:i] # don't use notes and references in readability measures
+        except ValueError:
+            pass
+        try:            
+            i = text.find('== Selected bibliography ==')
             text = text[0:i] # don't use notes and references in readability measures
         except ValueError:
             pass
@@ -122,11 +135,8 @@ class wikiScraper():
             text = text[0:i] # don't use notes and references in readability measures
         except ValueError:
             pass   
-        if len(text) > 5: # don't measure readability on very short pages - causes errors and returns meaningless info
-            readability = ReadabilityTool(text)    
-        else:
-            readability = None
-        return readability
+        return text
+        
             
     ##########################################################################################################    
     # convert wikipage title and/or page number to feature dict 
@@ -412,20 +422,21 @@ class wikiScraper():
     # (re)score entire database based on features already in database (no new scraping here)
     def scoreDB(self,iStart = 0):
 
+        qp = getQualPred(self.qpfile)
+
         # open database and get features and pageID
         conn = conDB(self.host,self.dbname,passwd=self.passwd,port=self.port, user=self.user)
         import pandas.io.sql as psql
         featuresDF = psql.frame_query("SELECT * FROM testing2", conn)
-        pageId = psql.frame_query("SELECT pageId FROM testing2", conn)
-        qp = getQualPred(self.qpfile)
 
         # go through each page
         print("Calculating scores & writing to database...")
-        for f in range(iStart,len(pageId)):
+        for f in range(iStart,len(featuresDF)):
             features = featuresDF.ix[f]
-            p = int(pageId.ix[f])
-            score = self.scorePageDB(features,p,qp,conn)
-            print(str(f) + " / " + str(len(featuresDF)) + " : old / new scores " + str(features['score']) + " : " + str(score)  + " : page " + str(p))
+            p = int(featuresDF['pageId'].ix[f])
+            if features['featured'] != 1 or features['flagged'] != 1:
+                score = self.scorePageDB(features,p,qp,conn) # only rescore if not featured or flagged
+                print(str(f) + " / " + str(len(featuresDF)) + " : old / new scores " + str(features['score']) + " : " + str(score)  + " : page " + str(p))
                    
         closeDB(conn)
 
@@ -504,10 +515,17 @@ def convert_types(row):
 def getQualPred(qpfile):
     # open quality predictor
     import pickle
-#    from app.qualPred import qualPred
+    if False: # optionally relearn the parameters. This generally should not be necessary except due to changes in learning algorithm or feature set
+        from app.qualPred import qualPred
+        print "about to relearn"
+        qp = qualPred()
+        qp.learn() #qp = learnWikipediaPageQuality.main()
+        print qp
     with open(qpfile, 'rb') as f:
         qp = pickle.load(f)
-    print "got qp!"
+    print "Got qp"
+    print qp.rfclf.feature_importances_
+    print qp.bUsingBuckets
     return qp
 
 
@@ -520,7 +538,7 @@ def main():
     #ws.grabWikiPageIDsFromDB()
     #ws.checkPageInDB()
     #ws.getWikiPagesMeta(iStart = 88545)
-    ws.scoreDB(5051)
+    ws.scoreDB(0)
     
 
 if __name__ == '__main__': main()

@@ -30,5 +30,5 @@ the Wikiscore by removing all features related to page length (such as number of
 I'm currently working on some analytics here: http://www.wikiscore.co/analytics
 
 This program uses:
-Python, Flask, the Natural Language Toolkit, the MediaWiki API, MySQL, Sci-kit Learn, Beautiful Soup,
+Python, Flask, the Natural Language Toolkit, the MediaWiki API, MySQL, Scikit Learn, Beautiful Soup,
 Wikipedia (https://github.com/goldsmith/Wikipedia)

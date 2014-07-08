@@ -20,21 +20,23 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn import preprocessing
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import recall_score, precision_score
-from database import *
+from app.database import *
 #configFileName = '/home/ubuntu/wikiphilia/app/settings/development.cfg'
-#configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiphilia/webapp/app/settings/development.cfg'
-configFileName = 'app/settings/development.cfg'
+configFileName = '/Users/ahna/Documents/Work/insightdatascience/project/wikiscore/webapp/app/settings/development.cfg'
+#configFileName = 'app/settings/development.cfg'
 
 #########################################################################
 class qualPred:
     def __init__(self):
         self.iUseFeatures = ['nImages', 'nLinks','nRefs', 'nWordsSummary','grade_level']
+        self.discretize= {'nImages':True, 'nLinks':True, 'nRefs':True, 'nWordsSummary':True, 'grade_level':False}
         self.testPropor = 0.4
         self.rfclf = []
         self.randfor = []
         self.logres_clf = []
         self.logres = []
-        
+        self.bUsingBuckets = True
+
     #########################################################################
     # learn() is the main function that fits the data and saves the pipeline for future predictions
     def learn(self):
@@ -68,11 +70,13 @@ class qualPred:
         if len([x for x in f if np.isnan(x)]) > 0:
             return 0.0
         else:
+            if self.bUsingBuckets:
+                f = self.getBuckets(f) # if using buckets, put into buckets before scoring
             probs = self.randfor.predict_proba(f) 
             return(probs[0][1]) # first element is prob of low quality, second element is prob of high quality
 
     #########################################################################
-    def featureImportances(self,featureVec):
+    def featureImportances(self):
         return self.rfclf.feature_importances_
 
     #########################################################################
@@ -100,30 +104,66 @@ class qualPred:
 
         # load data from database
         import pandas.io.sql as psql
-        DF = psql.frame_query("SELECT * FROM training2", conn)
-        closeDB(conn)
+        DF = psql.frame_query("SELECT * FROM testing2 WHERE flagged = 1 OR featured = 1", conn)        
         DF = DF[~np.isnan(DF.meanWordLength)]   # remove rows with NaN in meanWordLength
         DF = DF[~np.isnan(DF.reading_ease)]     # remove rows with NaN in reading_ease  
-        X = DF[self.iUseFeatures].values          #.astype('float')
+        X = DF[self.iUseFeatures].values         #.astype('float')
+        
+        if self.bUsingBuckets: 
+            maxes = list()
+            for i in range(len(self.iUseFeatures)):
+                sql = "SELECT AVG({}), STD({}) FROM testing2 WHERE featured = 1".format(self.iUseFeatures[i],self.iUseFeatures[i])
+                temp = psql.frame_query(sql, conn)
+                maxes.append(sum(temp.ix[0])) # add up average + standard dev of featued pages to be used for the maximum bucket value
+            self.computeBuckets(X,maxes)                  # for some of the features, compute buckets so as not to use raw values but use "low","med","high" or more values
+            X = self.getAllBuckets(X)               # put some of the features into buckets
+            
         y = DF['score'].values                  # labels are 1 if featured is True, 0 if flagged is True
         np.random.seed()                        # divide into training set and test set
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(\
         X, y, test_size=self.testPropor, train_size=1-self.testPropor, random_state=np.random.random_integers(100))
+        closeDB(conn)
 
     #########################################################################
-    def transformFeatures(self,featureVec):
-        # TO DO: write a function that takes a feature dictionary and bins certain features
-        # such as to not penalize pages for having more images, links, intro words than typical featured pages
-        t = []
-        for name in self.iUseFeatures:
-            if name == 'nImages':
-                # TO DO: put into discrete bins akin to small, medium, large with the large bin including the average number of images on featured pages, and anything bigger                
-                f = featureVec[name]
-                transFeat = 0 
-            t.append(transFeat)
-        return t    
-        
+    # for certain features, discretize into buckets and mark left edge of bucket
+    def computeBuckets(self,X,maxes):
+        self.buckets = dict()
+        nBuckets = 100
+        for i in range(len(self.iUseFeatures)):
+            if self.discretize[self.iUseFeatures[i]]:
+                bins = np.linspace(0, maxes[i], nBuckets)
+                self.buckets[self.iUseFeatures[i]] = bins[0:len(bins)-1] # remove last bin since these are left edges of bins
+
     #########################################################################
+    def getBuckets(self,f):
+        # f is a feature vector (array) of same length and ordering as self.iUseFeatures
+        # t is a transformed version of f    
+        t = list()
+        for i in range(len(self.iUseFeatures)): # for each feature
+            if self.discretize[self.iUseFeatures[i]]: # if it is a feature we are discretizing
+                buckets2 = self.buckets[self.iUseFeatures[i]]
+                t.append(len(buckets2)) # default to last bucket
+                for b in range(1,len(buckets2)): # step through the buckets unti we find the right one
+                    if f[i] < buckets2[b]:
+                        t[i] = b-1 # nearest bucket
+                        break;
+            else:
+                t.append(f[i])  # not discretizing- just keep original version
+        return t      
+
+    #########################################################################
+    # for a matrix of feature value, grab nearest bucket
+    # X has the same number of columns as in self.iUseFeatures and same ordering
+    def getAllBuckets(self,X):
+        n = len(X[:,0])
+        X2 = np.zeros(X.shape)
+        for j in range(n): # for each index j in the list of values of that feature
+            X2[j,:] = self.getBuckets(X[j,:])  
+        return X2    
+              
+
+    #########################################################################
+    # fit the data using random forest, logistic regression, and decision trees
     def fitData(self):
         self.randfor.fit(self.X_train, self.y_train)
         print self.randfor.score(self.X_test, self.y_test)
@@ -157,11 +197,12 @@ class qualPred:
         print("Extra trees score on training data: " + str(self.xtrees.score(self.X_train, self.y_train)))
         print("Extra trees score on test data: " + str(self.xtrees.score(self.X_test, self.y_test)))
         print("Extra trees recall score on test data: " + str(recall_score(self.y_test, preds)))
-        print("Extra trees rrecision score on test data: " + str(precision_score(self.y_test, preds)))
+        print("Extra trees precision score on test data: " + str(precision_score(self.y_test, preds)))
 
         
     #########################################################################
-    def save(self):    # save results to pickled object TO DO: consider removing data first
+    # save results to pickled object TO DO: consider removing data first
+    def save(self):    
         import pickle
         with open(self.qualityPredictorFile, 'wb') as f:
             pickle.dump(self,f)
