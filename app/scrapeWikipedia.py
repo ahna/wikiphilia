@@ -538,7 +538,7 @@ def main():
     #ws.grabWikiPageIDsFromDB()
     #ws.checkPageInDB()
     #ws.getWikiPagesMeta(iStart = 88545)
-    ws.scoreDB(0)
+    ws.scoreDB(16802)
     
 
 if __name__ == '__main__': main()
