@@ -50,8 +50,12 @@ class qualPred:
     # return feature featureVector f for a particular featureVec dict
     def getFeatures(self,featureVec):
         f = []
+        from pandas.core.series import Series as Series
         for name in self.iUseFeatures:
-            f.append(featureVec[name])
+            thisFeature = featureVec[name]
+            if type(thisFeature) == Series:
+                thisFeature = thisFeature[0]
+            f.append(thisFeature) 
         return f    
 
     #########################################################################
@@ -67,6 +71,7 @@ class qualPred:
     # return quality score between 0 (low quality) and 1 (high quality)    
     def qualityScore(self,featureVec):
         f = self.getFeatures(featureVec)
+        print("features = " + str(f))
         if len([x for x in f if np.isnan(x)]) > 0:
             return 0.0
         else:

@@ -33,7 +33,7 @@ def main():
         pickle.dump(str(links),f)
 
     # save wikipedia featured page meta data
-    ws.getWikiPagesMeta(links=links,iStart=0,tablename='training2')        
+    ws.getWikiPagesMeta(links=links,iStart=0,tablename='training2',featured=True)        
 
 if __name__ == '__main__': main()
     

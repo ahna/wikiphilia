@@ -27,7 +27,7 @@ class wikiScraper():
         self.wp = [] # place for current wikipedia page
         self.iUseDB = ['meanWordLength','meanSentLength', 'nChars','nImages', 'nLinks','nSections', 'nSents',\
      'nRefs', 'nWordsSummary','pageId','revisionId','title','url','reading_ease','grade_level',\
-     'ColemanLiauIndex','GunningFogIndex','ARI','SMOGIndex','flags','flagged','score']
+     'ColemanLiauIndex','GunningFogIndex','ARI','SMOGIndex','flags','flagged','featured','score']
         self.DF = pd.DataFrame(columns=self.iUseDB)
       
     ##########################################################################################################     
@@ -295,7 +295,7 @@ class wikiScraper():
         
     ##########################################################################################################
     # for each wikipedia page, get some meta data and put in the database or csvfile
-    def getWikiPagesMeta(self,links = 'NA',DF = 'NA',csvfilename = 'NA',iStart=0,title=None,flags=None,tablename='testing2'):
+    def getWikiPagesMeta(self,links = 'NA',DF = 'NA',csvfilename = 'NA',iStart=0,title=None,flags=None,tablename='testing2',featured=False):
         import pandas as pd    
         p = None; score = None
         
@@ -359,8 +359,10 @@ class wikiScraper():
     
                     if flags is None:
                         new_row['flagged'] = False
+                        new_row['featured'] = featured 
                     else:
                         new_row['flagged'] = True
+                        new_row['featured'] = featured 
                         new_row['score'] = 0
                     
                     score = new_row['score']
@@ -384,8 +386,8 @@ class wikiScraper():
                                 cur.execute('''INSERT INTO training2 (meanWordLength,meanSentLength, \
                                 nChars,nImages, nLinks,nSections, nSents,nRefs, nWordsSummary,pageId,\
                                 revisionId,title,url,reading_ease,grade_level,\
-                                ColemanLiauIndex,GunningFogIndex,ARI,SMOGIndex,flags,flagged,score) \
-                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', new_row)
+                                ColemanLiauIndex,GunningFogIndex,ARI,SMOGIndex,flags,flagged,featured,score) \
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', new_row)
                                 conn.commit()
                             except:
                                 print "Skipping for training2:  "
@@ -395,15 +397,16 @@ class wikiScraper():
                                 cur.execute('''INSERT INTO testing2 (meanWordLength,meanSentLength, \
                                 nChars,nImages, nLinks,nSections, nSents,nRefs, nWordsSummary,pageId,\
                                 revisionId,title,url,reading_ease,grade_level,\
-                                ColemanLiauIndex,GunningFogIndex,ARI,SMOGIndex,flags,flagged,score) \
-                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', new_row)
+                                ColemanLiauIndex,GunningFogIndex,ARI,SMOGIndex,flags,flagged,featured,score) \
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', new_row)
                                 conn.commit()
                                 print "Committed"
-                                f = dict(zip(self.iUseDB,new_row)) 
-                                f
-                                score = self.scorePageDB(f,p,qp,conn)
                             except:
-                                print "Skipping for testing2:  "
+                                print "Exception. Skipping for testing2  "
+
+                            f = dict(zip(self.iUseDB,new_row)) 
+                            print f
+                            score = self.scorePageDB(f,p,qp,conn)
             i += 1              
         closeDB(conn)     # close up database        
         return score
@@ -412,10 +415,18 @@ class wikiScraper():
     # score wikipedia page and write to DB
     def scorePageDB(self,features,pageId,qp,conn):
         print "Scoring page " + str(pageId) 
-        score = float(qp.qualityScore(features))
+        if features['featured'] is True:
+            score = 1.0 # by definition, featured pages get a score of 1
+        elif features['flagged'] is True:
+            score = 0.0 # by definition, featured pages get a score of 0
+        else:
+            score = float(qp.qualityScore(features))
         print "Scoring page " + str(pageId) + " with score = " + str(score) 
-        curDB(conn).execute('''UPDATE testing2 SET score=%s WHERE pageId=%s''',(score,int(pageId)))
-        conn.commit()
+        try:
+            curDB(conn).execute('''UPDATE testing2 SET score=%s WHERE pageId=%s''',(score,int(pageId))) # this line seems to fail if score used to be NULL
+            conn.commit()
+        except:
+            print("Having trouble updating score because it was NULL. TO DO: figure out why") 
         return score
         
     ##########################################################################################################

@@ -99,7 +99,14 @@ def getWikiScore(searchPhrase):
 
     if bInDB is True:
         #print("Using searchPhrase from database = " + searchResultUse)
-        print searchPhraseDF        
+        print searchPhraseDF['score'][0]
+        if searchPhraseDF['score'][0] == None:
+            print "Score is none."
+            ws = sw.wikiScraper()
+            ws.setUpDB(configFileName)
+            qp = sw.getQualPred(ws.qpfile)
+            searchPhraseDF['score'] = ws.scorePageDB(searchPhraseDF,searchPhraseDF['pageId'][0],qp,con)
+        print searchPhraseDF['score']
         wikiscore = normalizeWikiScore(searchPhraseDF['score'][0])
         print("Score is " + str(searchPhraseDF['score'][0]) + ", " + str(wikiscore))
         print searchPhraseDF['url']
